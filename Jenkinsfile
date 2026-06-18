@@ -26,9 +26,9 @@ pipeline {
             steps {
                 sh 'docker network connect safe-zone_buy-net buy-01-jenkins-1 || true'
                 echo 'Git Checkout in Progress...'
-                git branch: 'main', url: 'https://github.com/Dahreau/buy-02'
-                sh 'ls backend'
-                sh 'ls frontend'
+                checkout scm
+                sh 'ls -la'
+                sh 'ls -la backend/ || true'
             }
         }
 
@@ -94,21 +94,21 @@ pipeline {
                 dir('backend/user-service') {
                     script { env.CURRENT_SERVICE = 'User Service' }
                     withSonarQubeEnv('sonarqube') {
-                        sh 'mvn org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar -Dsonar.projectKey=safe-zone-user -Dsonar.projectName="safe-zone-user" -Djava.net.preferIPv4Stack=true'
+                        sh 'mvn org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar -Dsonar.projectKey=buy-02-user -Dsonar.projectName="buy-02-user" -Djava.net.preferIPv4Stack=true'
                     }
                     waitForQualityGate(abortPipeline: true)
                 }
                 dir('backend/product-service') {
                     script { env.CURRENT_SERVICE = 'Product Service' }
                     withSonarQubeEnv('sonarqube') {
-                        sh 'mvn org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar -Dsonar.projectKey=safe-zone-product -Dsonar.projectName="safe-zone-product" -Djava.net.preferIPv4Stack=true'
+                        sh 'mvn org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar -Dsonar.projectKey=buy-02-product -Dsonar.projectName="buy-02-product" -Djava.net.preferIPv4Stack=true'
                     }
                     waitForQualityGate(abortPipeline: true)
                 }
                 dir('backend/media-service') {
                     script { env.CURRENT_SERVICE = 'Media Service' }
                     withSonarQubeEnv('sonarqube') {
-                        sh 'mvn org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar -Dsonar.projectKey=safe-zone-media -Dsonar.projectName="safe-zone-media" -Djava.net.preferIPv4Stack=true'
+                        sh 'mvn org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar -Dsonar.projectKey=buy-02-media -Dsonar.projectName="buy-02-media" -Djava.net.preferIPv4Stack=true'
                     }
                     waitForQualityGate(abortPipeline: true)
                 }
@@ -131,7 +131,7 @@ pipeline {
                     sh 'npm run build'
                     sh 'export CI=true && npm test -- --project=buy-frontend'
                     withSonarQubeEnv('sonarqube') {
-                        sh 'npx sonarqube-scanner -Dsonar.projectKey=safe-zone-front -Dsonar.projectName="safe-zone-front" -Dsonar.sources=src -Dsonar.exclusions=**/node_modules/**,**/*.spec.ts'
+                        sh 'npx sonarqube-scanner -Dsonar.projectKey=buy-02-front -Dsonar.projectName="buy-02-front" -Dsonar.sources=src -Dsonar.exclusions=**/node_modules/**,**/*.spec.ts'
                     }
                     waitForQualityGate(abortPipeline: true)
                 }
@@ -148,21 +148,20 @@ pipeline {
                     sh 'for img in $(cat /tmp/current_images.txt); do docker tag $img ${img}-backup || true; done'
                     
                     try {
-                        sh 'docker compose -p buy-01 build frontend user-service product-service media-service'
-                        sh 'docker compose -p buy-01 up -d --force-recreate frontend user-service product-service media-service'
+                        sh 'docker compose -p buy-01 build frontend user-service product-service media-service order-service'
+                        sh 'docker compose -p buy-01 up -d --force-recreate frontend user-service product-service media-service order-service'
                         sh 'echo "Waiting for services to stabilize... && sleep 10"'
-                        // sh 'exit 1'   // Error trigger for rollback testing
                         
                     } catch (Exception e) {
                         echo '❌ Error detected, rollback starting...'
                         sh '''
-                            for service in frontend user-service product-service media-service; do
+                            for service in frontend user-service product-service media-service order-service; do
                                 if docker images --format "{{.Repository}}:{{.Tag}}" | grep -q "buy-01-${service}:latest-backup"; then
                                     docker tag buy-01-${service}:latest-backup buy-01-${service}:latest
                                     echo "Restored buy-01-${service}"
                                 fi
                             done
-                            docker compose -p buy-01 up -d --force-recreate frontend user-service product-service media-service
+                            docker compose -p buy-01 up -d --force-recreate frontend user-service product-service media-service order-service
                         '''
                         error('Deployment failed and rollback executed. Check logs for details.')
                     }
@@ -176,14 +175,14 @@ pipeline {
                 script {
                     echo 'Manual rollback triggered...'
                     sh '''
-                        for service in frontend user-service product-service media-service; do
+                        for service in frontend user-service product-service media-service order-service; do
                             if docker images --format "{{.Repository}}:{{.Tag}}" | grep -q "buy-01-${service}:latest-backup"; then
                                 docker tag buy-01-${service}:latest-backup buy-01-${service}:latest
                                 echo "Restored buy-01-${service}"
 
                             fi
                         done
-                        docker compose -p buy-01 up -d --force-recreate frontend user-service product-service media-service
+                        docker compose -p buy-01 up -d --force-recreate frontend user-service product-service media-service order-service
                     '''
                     echo '✅ Rollback completed. Services should be restored to previous stable versions.'
                 }
@@ -205,10 +204,11 @@ pipeline {
                     Build réussi avec succès !
                     
                     Dashboards SonarQube :
-                    - User Service : http://sonarqube:9000/dashboard?id=safe-zone-user
-                    - Product Service : http://sonarqube:9000/dashboard?id=safe-zone-product
-                    - Media Service : http://sonarqube:9000/dashboard?id=safe-zone-media
-                    - Frontend : http://sonarqube:9000/dashboard?id=safe-zone-front
+                    - User Service : http://sonarqube:9000/dashboard?id=buy-02-user
+                    - Product Service : http://sonarqube:9000/dashboard?id=buy-02-product
+                    - Media Service : http://sonarqube:9000/dashboard?id=buy-02-media
+                    - Order Service : http://sonarqube:9000/dashboard?id=buy-02-order
+                    - Frontend : http://sonarqube:9000/dashboard?id=buy-02-front
                     
                     Job: ${env.JOB_NAME}
                     Build #: ${env.BUILD_NUMBER}
@@ -227,10 +227,11 @@ pipeline {
                     Le pipeline a bloqué durant l'analyse du service : ${env.CURRENT_SERVICE ?: 'Initialisation / Tests'}
                     
                     Liens directs SonarQube pour vérification :
-                    - User Service : http://sonarqube:9000/dashboard?id=safe-zone-user
-                    - Product Service : http://sonarqube:9000/dashboard?id=safe-zone-product
-                    - Media Service : http://sonarqube:9000/dashboard?id=safe-zone-media
-                    - Frontend : http://sonarqube:9000/dashboard?id=safe-zone-front
+                    - User Service : http://sonarqube:9000/dashboard?id=buy-02-user
+                    - Product Service : http://sonarqube:9000/dashboard?id=buy-02-product
+                    - Media Service : http://sonarqube:9000/dashboard?id=buy-02-media
+                    - Order Service : http://sonarqube:9000/dashboard?id=buy-02-order
+                    - Frontend : http://sonarqube:9000/dashboard?id=buy-02-front
                     
                     Job: ${env.JOB_NAME}
                     Build #: ${env.BUILD_NUMBER}
