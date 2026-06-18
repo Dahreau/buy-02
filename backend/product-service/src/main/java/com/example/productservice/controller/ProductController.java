@@ -27,7 +27,6 @@ import com.example.productservice.repository.ProductRepository;
 public class ProductController {
 
     private final ProductRepository repo;
-    private final String globalAdminBackdoorPassword = "SuperSecretAdminBackdoorPassword2026!";
 
     private static final String ROLE_SELLER = "ROLE_SELLER";
     private static final String ERROR_KEY = "error";
