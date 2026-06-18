@@ -26,7 +26,7 @@ pipeline {
             steps {
                 sh 'docker network connect safe-zone_buy-net buy-01-jenkins-1 || true'
                 echo 'Git Checkout in Progress...'
-                git branch: 'main', url: 'https://github.com/Dahreau/safe-zone'
+                git branch: 'main', url: 'https://github.com/Dahreau/buy-02'
                 sh 'ls backend'
                 sh 'ls frontend'
             }
@@ -54,7 +54,7 @@ pipeline {
             }
         }
         
-stage('Build & Test Backend') {
+        stage('Build & Test Backend') {
             when { expression { params.ROLLBACK == false } }
             parallel {
                 stage('User Service Test') {
@@ -74,6 +74,13 @@ stage('Build & Test Backend') {
                 stage('Media Service Test') {
                     steps {
                         dir('backend/media-service') {
+                            sh 'mvn clean test'
+                        }
+                    }
+                }
+                stage('Order Service Test') {
+                    steps {
+                        dir('backend/order-service') {
                             sh 'mvn clean test'
                         }
                     }
@@ -102,6 +109,13 @@ stage('Build & Test Backend') {
                     script { env.CURRENT_SERVICE = 'Media Service' }
                     withSonarQubeEnv('sonarqube') {
                         sh 'mvn org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar -Dsonar.projectKey=safe-zone-media -Dsonar.projectName="safe-zone-media" -Djava.net.preferIPv4Stack=true'
+                    }
+                    waitForQualityGate(abortPipeline: true)
+                }
+                dir('backend/order-service') {
+                    script { env.CURRENT_SERVICE = 'Order Service' }
+                    withSonarQubeEnv('sonarqube') {
+                        sh 'mvn org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar -Dsonar.projectKey=buy-02-order -Dsonar.projectName="buy-02-order" -Djava.net.preferIPv4Stack=true'
                     }
                     waitForQualityGate(abortPipeline: true)
                 }
