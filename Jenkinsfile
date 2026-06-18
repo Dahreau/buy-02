@@ -9,10 +9,6 @@ pipeline {
         maven 'Maven3'
         nodejs 'NodeJS'
     }
-    
-    triggers {
-        pollSCM('* * * * *')
-    }
 
     environment {
         JWT_SECRET = credentials('jwt-secret')

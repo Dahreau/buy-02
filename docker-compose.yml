@@ -108,6 +108,23 @@ services:
       # persist uploaded media files on the host so they survive container rebuilds
       - ./backend/media-service/uploads:/app/uploads
 
+  order-service:
+    build: ./backend/order-service
+    ports:
+      - "8084:8084"
+    environment:
+      - SPRING_DATA_MONGODB_URI=mongodb://mongo:27017/orderdb
+      - JWT_SECRET=${JWT_SECRET}
+      - INTERNAL_TOKEN=${INTERNAL_TOKEN}
+      - USER_SERVICE_URL=http://user-service:8081
+      - PRODUCT_SERVICE_URL=http://product-service:8082
+    depends_on:
+      - mongo
+      - user-service
+      - product-service
+    networks:
+      - buy-net
+
 
 volumes:
   mongo-data:
