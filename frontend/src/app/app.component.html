@@ -1,0 +1,25 @@
+<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+    <div class="container-fluid app-container">
+        <a class="navbar-brand" routerLink="/">Buy</a>
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item"><a class="nav-link" routerLink="/">Products</a></li>
+                <li class="nav-item"><a class="nav-link" routerLink="/seller">Seller Dashboard NON</a></li>
+            </ul>
+            <ul class="navbar-nav ms-auto">
+                <ng-container *ngIf="isLoggedIn$ | async; else guestLinks">
+                    <li class="nav-item">
+                        <a class="nav-link" (click)="logout()" style="cursor: pointer">Logout</a>
+                    </li>
+                </ng-container>
+                <ng-template #guestLinks>
+                    <li class="nav-item"><a class="nav-link" routerLink="/login">Login</a></li>
+                    <li class="nav-item"><a class="nav-link" routerLink="/register">Register</a></li>
+                </ng-template>
+            </ul>
+        </div>
+    </div>
+</nav>
+<div class="app-container">
+    <router-outlet></router-outlet>
+</div>
