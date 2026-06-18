@@ -1,10 +1,12 @@
 package com.example.orderservice.service;
 
-import com.example.orderservice.dto.StockUpdateEvent;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+
+import com.example.orderservice.dto.StockUpdateEvent;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
@@ -17,7 +19,7 @@ public class OrderProducer {
         log.info("Envoi mise à jour stock pour le produit {} : -{}", productId, quantity);
         webClientBuilder.build()
                 .post()
-                .uri("http://product-service/api/products/stock-update")
+                .uri("http://product-service:8082/api/products/stock-update")
                 .bodyValue(new StockUpdateEvent(productId, quantity))
                 .retrieve()
                 .toBodilessEntity()

@@ -1,30 +1,38 @@
 package com.example.orderservice.service;
 
-import com.example.orderservice.dto.*;
-import com.example.orderservice.model.Order;
-import com.example.orderservice.model.OrderItem;
-import com.example.orderservice.model.OrderStatus;
-import com.example.orderservice.repository.OrderRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.aggregation.*;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.reactive.function.client.WebClient;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.aggregation.ArithmeticOperators;
+import org.springframework.data.mongodb.core.aggregation.ConvertOperators;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.client.WebClient;
+
+import com.example.orderservice.dto.CartDTO;
+import com.example.orderservice.dto.CheckoutRequest;
+import com.example.orderservice.dto.ProductSummaryDTO;
+import com.example.orderservice.dto.SellerStatsDTO;
+import com.example.orderservice.dto.UserStatsDTO;
+import com.example.orderservice.model.Order;
+import com.example.orderservice.model.OrderItem;
+import com.example.orderservice.model.OrderStatus;
+import com.example.orderservice.repository.OrderRepository;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
@@ -147,7 +155,7 @@ public class OrderService {
             criteriaList.add(Criteria.where("createdAt").gte(start).lte(end));
         }
         if (keyword != null) {
-            criteriaList.add(Criteria.where("items.productName").regex(keyword, "i"));
+            criteriaList.add(Criteria.where("items.productName").regex(java.util.regex.Pattern.quote(keyword), "i"));
         }
 
         if (!criteriaList.isEmpty()) {
@@ -271,7 +279,11 @@ public class OrderService {
                 .build();
 
         Order savedOrder = orderRepository.save(order);
-        clearCart(token);
+        try {
+            clearCart(token);
+        } catch (Exception e) {
+            log.warn("Commande {} créée mais échec du vidage du panier", savedOrder.getId(), e);
+        }
         return savedOrder;
     }
 

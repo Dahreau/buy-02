@@ -1,42 +1,59 @@
 package com.example.orderservice.controller;
 
+import java.time.LocalDateTime;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.example.orderservice.dto.CheckoutRequest;
 import com.example.orderservice.dto.SellerStatsDTO;
 import com.example.orderservice.dto.UserStatsDTO;
 import com.example.orderservice.model.Order;
 import com.example.orderservice.model.OrderStatus;
 import com.example.orderservice.service.OrderService;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.web.bind.annotation.*;
-
-import java.time.LocalDateTime;
-import java.util.Base64;
 
 @RestController
 @RequestMapping("/api/orders")
 @RequiredArgsConstructor
+
 public class OrderController {
 
+    @org.springframework.beans.factory.annotation.Value("${jwt.secret}")
+    private String jwtSecret;
+
     private final OrderService orderService;
-    private final ObjectMapper objectMapper = new ObjectMapper();
     private String seller = "SELLER";
     private String errors = "Accès réservé aux vendeurs";
 
     private String getClaim(String token, String claim) {
         try {
             String jwt = token.startsWith("Bearer ") ? token.substring(7) : token;
-            String payload = jwt.split("\\.")[1];
-            String decodedPayload = new String(Base64.getDecoder().decode(payload));
-            JsonNode json = objectMapper.readTree(decodedPayload);
-            return json.get(claim).asText();
+            io.jsonwebtoken.Claims claims = io.jsonwebtoken.Jwts.parserBuilder()
+                    .setSigningKey(io.jsonwebtoken.security.Keys.hmacShaKeyFor(jwtSecret.getBytes(java.nio.charset.StandardCharsets.UTF_8)))
+                    .build()
+                    .parseClaimsJws(jwt)
+                    .getBody();
+
+            if ("id".equals(claim) || "sub".equals(claim)) {
+                return claims.getSubject();
+            }
+            return claims.get(claim, String.class);
         } catch (Exception e) {
-            throw new RuntimeException("Token invalide : " + e.getMessage());
+            throw new RuntimeException("Token invalide");
         }
     }
 
