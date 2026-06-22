@@ -12,7 +12,7 @@ class ModelTest {
 
     @Test
     void testOrder() {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.of(2024, 1, 1, 12, 0);
         OrderItem item = OrderItem.builder()
                 .productId("p1")
                 .productName("Prod 1")
