@@ -130,9 +130,9 @@ pipeline {
                     sh 'npm ci --unsafe-perm'
                     sh 'npx puppeteer install'
                     sh 'npm run build'
-                    sh 'export CI=true && npm test -- --project=buy-frontend'
+                    sh 'export CI=true && npm test -- --project=buy-frontend --code-coverage --no-watch'
                     withSonarQubeEnv('sonarqube') {
-                        sh 'npx sonarqube-scanner -Dsonar.projectKey=buy-02-front -Dsonar.projectName="buy-02-front" -Dsonar.sources=src -Dsonar.exclusions=**/node_modules/**,**/*.spec.ts'
+                        sh 'npx sonarqube-scanner -Dsonar.projectKey=buy-02-front -Dsonar.projectName="buy-02-front" -Dsonar.sources=src -Dsonar.exclusions=**/node_modules/**,**/*.spec.ts -Dsonar.javascript.lcov.reportPaths=coverage/buy-frontend/lcov.info'
                     }
                     waitForQualityGate(abortPipeline: true)
                 }
