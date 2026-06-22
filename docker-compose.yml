@@ -52,6 +52,7 @@ services:
       - SONAR_JDBC_PASSWORD=sonar
       - SONAR_WEB_JAVAOPTS=-Xmx512m -Xms256m
       - SONAR_CE_JAVAOPTS=-Xmx512m -Xms256m
+      - SONAR_SEARCH_JAVAOPTS=-Xmx512m -Xms256m
     volumes:
       - sonarqube_data:/opt/sonarqube/data
       - sonarqube_extensions:/opt/sonarqube/extensions
@@ -72,6 +73,12 @@ services:
       - SPRING_DATA_MONGODB_URI=mongodb://mongo:27017/userdb
       - JWT_SECRET=${JWT_SECRET}
       - INTERNAL_TOKEN=${INTERNAL_TOKEN}
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+        reservations:
+          memory: 256m
     depends_on:
       - mongo
     networks:
@@ -85,6 +92,12 @@ services:
       - SPRING_DATA_MONGODB_URI=mongodb://mongo:27017/productdb
       - JWT_SECRET=${JWT_SECRET}
       - INTERNAL_TOKEN=${INTERNAL_TOKEN}
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+        reservations:
+          memory: 256m
     depends_on:
       - mongo
     networks:
@@ -99,6 +112,12 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - INTERNAL_TOKEN=${INTERNAL_TOKEN}
       - PRODUCT_SERVICE_URL=http://product-service:8082
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+        reservations:
+          memory: 256m
     depends_on:
       - mongo
       - product-service
@@ -118,6 +137,12 @@ services:
       - INTERNAL_TOKEN=${INTERNAL_TOKEN}
       - USER_SERVICE_URL=http://user-service:8081
       - PRODUCT_SERVICE_URL=http://product-service:8082
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+        reservations:
+          memory: 256m
     depends_on:
       - mongo
       - user-service

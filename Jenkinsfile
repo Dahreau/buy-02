@@ -13,6 +13,7 @@ pipeline {
     environment {
         JWT_SECRET = credentials('jwt-secret')
         INTERNAL_TOKEN = credentials('internal-token')
+        MAVEN_OPTS = "-Xmx512m -XX:MaxMetaspaceSize=256m"
     }
 
     parameters {
@@ -60,62 +61,80 @@ pipeline {
                 stage('User Service Test') {
                     steps {
                         dir('backend/user-service') {
-                            sh 'mvn clean test'
+                            sh 'mvn clean test -DforkCount=1 -DreuseForks=false'
                         }
                     }
                 }
                 stage('Product Service Test') {
                     steps {
                         dir('backend/product-service') {
-                            sh 'mvn clean test'
+                            sh 'mvn clean test -DforkCount=1 -DreuseForks=false'
                         }
                     }
                 }
                 stage('Media Service Test') {
                     steps {
                         dir('backend/media-service') {
-                            sh 'mvn clean test'
+                            sh 'mvn clean test -DforkCount=1 -DreuseForks=false'
                         }
                     }
                 }
                 stage('Order Service Test') {
                     steps {
                         dir('backend/order-service') {
-                            sh 'mvn clean test'
+                            sh 'mvn clean test -DforkCount=1 -DreuseForks=false'
                         }
                     }
                 }
             }
         }
 
-        stage('SonarQube Backend Analysis') {
+        stage('SonarQube User Service') {
             when { expression { params.ROLLBACK == false } }
             steps {
                 dir('backend/user-service') {
                     script { env.CURRENT_SERVICE = 'User Service' }
                     withSonarQubeEnv('sonarqube') {
-                        sh 'mvn org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar -Dsonar.projectKey=buy-02-user -Dsonar.projectName="buy-02-user" -Djava.net.preferIPv4Stack=true'
+                        sh 'mvn org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar -Dsonar.projectKey=buy-02-user -Dsonar.projectName="buy-02-user" -Djava.net.preferIPv4Stack=true -Dsonar.exclusions=**/target/**,**/node_modules/**,**/*.spec.ts,**/generated-sources/** -Dsonar.java.binaries=target/classes'
                     }
                     waitForQualityGate(abortPipeline: true)
                 }
+            }
+        }
+
+        stage('SonarQube Product Service') {
+            when { expression { params.ROLLBACK == false } }
+            steps {
                 dir('backend/product-service') {
                     script { env.CURRENT_SERVICE = 'Product Service' }
                     withSonarQubeEnv('sonarqube') {
-                        sh 'mvn org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar -Dsonar.projectKey=buy-02-product -Dsonar.projectName="buy-02-product" -Djava.net.preferIPv4Stack=true'
+                        sh 'mvn org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar -Dsonar.projectKey=buy-02-product -Dsonar.projectName="buy-02-product" -Djava.net.preferIPv4Stack=true -Dsonar.exclusions=**/target/**,**/node_modules/**,**/*.spec.ts,**/generated-sources/** -Dsonar.java.binaries=target/classes'
                     }
                     waitForQualityGate(abortPipeline: true)
                 }
+            }
+        }
+
+        stage('SonarQube Media Service') {
+            when { expression { params.ROLLBACK == false } }
+            steps {
                 dir('backend/media-service') {
                     script { env.CURRENT_SERVICE = 'Media Service' }
                     withSonarQubeEnv('sonarqube') {
-                        sh 'mvn org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar -Dsonar.projectKey=buy-02-media -Dsonar.projectName="buy-02-media" -Djava.net.preferIPv4Stack=true'
+                        sh 'mvn org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar -Dsonar.projectKey=buy-02-media -Dsonar.projectName="buy-02-media" -Djava.net.preferIPv4Stack=true -Dsonar.exclusions=**/target/**,**/node_modules/**,**/*.spec.ts,**/generated-sources/** -Dsonar.java.binaries=target/classes'
                     }
                     waitForQualityGate(abortPipeline: true)
                 }
+            }
+        }
+
+        stage('SonarQube Order Service') {
+            when { expression { params.ROLLBACK == false } }
+            steps {
                 dir('backend/order-service') {
                     script { env.CURRENT_SERVICE = 'Order Service' }
                     withSonarQubeEnv('sonarqube') {
-                        sh 'mvn org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar -Dsonar.projectKey=buy-02-order -Dsonar.projectName="buy-02-order" -Djava.net.preferIPv4Stack=true'
+                        sh 'mvn org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar -Dsonar.projectKey=buy-02-order -Dsonar.projectName="buy-02-order" -Djava.net.preferIPv4Stack=true -Dsonar.exclusions=**/target/**,**/node_modules/**,**/*.spec.ts,**/generated-sources/** -Dsonar.java.binaries=target/classes'
                     }
                     waitForQualityGate(abortPipeline: true)
                 }
@@ -145,12 +164,18 @@ pipeline {
                     echo '🚀 Starting deployment process...'
                     
                     sh 'docker images --format "{{.Repository}}:{{.Tag}}" | grep buy-01 | grep \':latest$\' > /tmp/current_images.txt || true'
-                    sh 'for img in $(cat /tmp/current_images.txt); do docker tag $img ${img}-backup || true; done'
+                    sh '''
+                    for img in $(cat /tmp/current_images.txt); do
+                        base_img=$(echo "$img" | cut -d':' -f1)
+                        docker rmi "${base_img}:latest-backup" 2>/dev/null || true
+                        docker tag "$img" "${base_img}:latest-backup"
+                    done
+                    '''
                     
                     try {
                         sh 'docker compose -p buy-01 build frontend user-service product-service media-service order-service'
                         sh 'docker compose -p buy-01 up -d --force-recreate frontend user-service product-service media-service order-service'
-                        sh 'echo "Waiting for services to stabilize... && sleep 10"'
+                        sh 'echo "Waiting for services to stabilize..." && sleep 10'
                         
                     } catch (Exception e) {
                         echo '❌ Error detected, rollback starting...'
