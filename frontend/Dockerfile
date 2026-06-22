@@ -1,15 +1,9 @@
-FROM node:20-alpine
+FROM nginx:alpine
 
-WORKDIR /app
+COPY dist/buy-frontend /usr/share/nginx/html
 
-# Install dependencies (including dev deps for ng CLI)
-COPY package.json package-lock.json* ./
-RUN npm ci
-
-# Copy source
-COPY . .
+RUN sed -i 's/listen  *80;/listen 4200;/g' /etc/nginx/conf.d/default.conf
 
 EXPOSE 4200
 
-# Use the local Angular CLI to serve the app
-CMD ["npx", "ng", "serve", "--host", "0.0.0.0", "--port", "4200"]
+CMD ["nginx", "-g", "daemon off;"]
