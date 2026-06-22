@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.example.orderservice.dto.CheckoutRequest;
 import com.example.orderservice.dto.SellerStatsDTO;
@@ -36,8 +38,8 @@ public class OrderController {
     private String jwtSecret;
 
     private final OrderService orderService;
-    private String seller = "SELLER";
-    private String errors = "Accès réservé aux vendeurs";
+    private static final String SELLER = "SELLER";
+    private static final String ERRORS = "Accès réservé aux vendeurs";
 
     private String getClaim(String token, String claim) {
         try {
@@ -52,8 +54,8 @@ public class OrderController {
                 return claims.getSubject();
             }
             return claims.get(claim, String.class);
-        } catch (Exception e) {
-            throw new RuntimeException("Token invalide");
+        } catch (io.jsonwebtoken.JwtException | IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token invalide", e);
         }
     }
 
@@ -66,8 +68,8 @@ public class OrderController {
     @GetMapping("/stats/seller")
     public SellerStatsDTO getSellerStats(@RequestHeader("Authorization") String token) {
         String role = getClaim(token, "role");
-        if (!seller.equals(role)) {
-            throw new RuntimeException(errors);
+        if (!SELLER.equals(role)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, ERRORS);
         }
         String sellerId = getClaim(token, "id");
         return orderService.getSellerStats(sellerId);
@@ -96,8 +98,8 @@ public class OrderController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         String role = getClaim(token, "role");
-        if (!seller.equals(role)) {
-            throw new RuntimeException(errors);
+        if (!SELLER.equals(role)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, ERRORS);
         }
         String sellerId = getClaim(token, "id");
         return orderService.searchOrders(null, sellerId, status, start, end, keyword, PageRequest.of(page, size));
@@ -115,8 +117,8 @@ public class OrderController {
             @PathVariable String id,
             @RequestParam OrderStatus status) {
         String role = getClaim(token, "role");
-        if (!seller.equals(role)) {
-            throw new RuntimeException(errors);
+        if (!SELLER.equals(role)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, ERRORS);
         }
         String sellerId = getClaim(token, "id");
         return orderService.updateOrderStatus(sellerId, id, status);

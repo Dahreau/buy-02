@@ -89,7 +89,7 @@ pipeline {
             }
         }
 
-        stage('SonarQube User Service') {
+        stage('SonarQube Analysis') {
             when { expression { params.ROLLBACK == false } }
             steps {
                 dir('backend/user-service') {
@@ -99,12 +99,6 @@ pipeline {
                     }
                     waitForQualityGate(abortPipeline: true)
                 }
-            }
-        }
-
-        stage('SonarQube Product Service') {
-            when { expression { params.ROLLBACK == false } }
-            steps {
                 dir('backend/product-service') {
                     script { env.CURRENT_SERVICE = 'Product Service' }
                     withSonarQubeEnv('sonarqube') {
@@ -112,12 +106,6 @@ pipeline {
                     }
                     waitForQualityGate(abortPipeline: true)
                 }
-            }
-        }
-
-        stage('SonarQube Media Service') {
-            when { expression { params.ROLLBACK == false } }
-            steps {
                 dir('backend/media-service') {
                     script { env.CURRENT_SERVICE = 'Media Service' }
                     withSonarQubeEnv('sonarqube') {
@@ -125,12 +113,6 @@ pipeline {
                     }
                     waitForQualityGate(abortPipeline: true)
                 }
-            }
-        }
-
-        stage('SonarQube Order Service') {
-            when { expression { params.ROLLBACK == false } }
-            steps {
                 dir('backend/order-service') {
                     script { env.CURRENT_SERVICE = 'Order Service' }
                     withSonarQubeEnv('sonarqube') {
