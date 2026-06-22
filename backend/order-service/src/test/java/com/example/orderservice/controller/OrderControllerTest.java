@@ -64,7 +64,6 @@ class OrderControllerTest {
     @Value("${jwt.secret}")
     private String jwtSecret;
 
-    // Générateur de token valide pour bypasser la sécurité proprement
     private String createValidToken(String id, String role) {
         Key key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
         return "Bearer " + Jwts.builder()
@@ -75,7 +74,6 @@ class OrderControllerTest {
     }
 
     @BeforeEach
-    @SuppressWarnings("unused")
     void setUp() {
         orderRepository.deleteAll();
     }
@@ -83,7 +81,6 @@ class OrderControllerTest {
     @Test
     @SuppressWarnings("unchecked")
     void checkoutValidCartShouldCreateOrderAndReturn200() {
-        // On génère un vrai JWT pour un USER
         String token = createValidToken("user123", "USER");
 
         CartItemDTO item = new CartItemDTO();
@@ -99,10 +96,14 @@ class OrderControllerTest {
 
         when(webClientBuilder.build()).thenReturn(webClient);
         when(webClient.get()).thenReturn(requestHeadersUriSpec);
+        when(webClient.delete()).thenReturn(requestHeadersUriSpec);
+        
         when(requestHeadersUriSpec.uri(anyString())).thenReturn(requestHeadersSpec);
         when(requestHeadersSpec.header(anyString(), anyString())).thenReturn(requestHeadersSpec);
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
+        
         when(responseSpec.bodyToMono(CartDTO.class)).thenReturn(Mono.just(dummyCart));
+        when(responseSpec.toBodilessEntity()).thenReturn(Mono.empty());
 
         CheckoutRequest checkoutRequest = new CheckoutRequest();
         checkoutRequest.setShippingAddress("123 Street, Rouen");
@@ -112,7 +113,7 @@ class OrderControllerTest {
 
         assertNotNull(response);
         assertEquals(OrderStatus.PENDING, response.getStatus());
-        assertEquals(BigDecimal.valueOf(200), response.getTotalAmount());
+        assertEquals(0, BigDecimal.valueOf(200).compareTo(response.getTotalAmount()));
         assertEquals("123 Street, Rouen", response.getShippingAddress());
 
         List<Order> savedOrders = orderRepository.findAll();
@@ -126,14 +127,13 @@ class OrderControllerTest {
         UserStatsDTO stats = orderController.getMyStats(token);
 
         assertNotNull(stats);
-        assertEquals(BigDecimal.ZERO, stats.getTotalSpent());
+        assertEquals(0, BigDecimal.ZERO.compareTo(stats.getTotalSpent()));
         assertEquals(0, stats.getTotalOrders());
         assertNotNull(stats.getTopProducts());
     }
 
     @Test
     void getSellerStatsShouldThrowForbiddenWhenUserIsNotSeller() {
-        // On génère un JWT avec le rôle CLIENT pour tester le rejet
         String token = createValidToken("client123", "CLIENT");
 
         ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> {
