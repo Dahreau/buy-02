@@ -3,6 +3,7 @@ package com.example.orderservice.model;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.time.Month;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -12,7 +13,7 @@ class ModelTest {
 
     @Test
     void testOrder() {
-        LocalDateTime now = LocalDateTime.of(2024, 1, 1, 12, 0);
+        LocalDateTime now = LocalDateTime.of(2024, Month.JANUARY, 1, 12, 0);
         OrderItem item = OrderItem.builder()
                 .productId("p1")
                 .productName("Prod 1")
