@@ -1,6 +1,7 @@
 package com.example.orderservice.controller;
 
 import java.math.BigDecimal;
+import java.security.Key;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -11,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
@@ -27,6 +29,8 @@ import com.example.orderservice.model.Order;
 import com.example.orderservice.model.OrderStatus;
 import com.example.orderservice.repository.OrderRepository;
 
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 import reactor.core.publisher.Mono;
 
 @ActiveProfiles("test")
@@ -57,6 +61,19 @@ class OrderControllerTest {
     @MockitoBean
     private WebClient.ResponseSpec responseSpec;
 
+    @Value("${jwt.secret}")
+    private String jwtSecret;
+
+    // Générateur de token valide pour bypasser la sécurité proprement
+    private String createValidToken(String id, String role) {
+        Key key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
+        return "Bearer " + Jwts.builder()
+                .claim("id", id)
+                .claim("role", role)
+                .signWith(key)
+                .compact();
+    }
+
     @BeforeEach
     @SuppressWarnings("unused")
     void setUp() {
@@ -66,7 +83,8 @@ class OrderControllerTest {
     @Test
     @SuppressWarnings("unchecked")
     void checkoutValidCartShouldCreateOrderAndReturn200() {
-        String token = "Bearer dummyToken";
+        // On génère un vrai JWT pour un USER
+        String token = createValidToken("user123", "USER");
 
         CartItemDTO item = new CartItemDTO();
         item.setProductId("prod123");
@@ -103,9 +121,9 @@ class OrderControllerTest {
 
     @Test
     void getUserStatsShouldReturnEmptyStatsWhenNoOrdersExist() {
-        String dummyToken = "Bearer dummyTokenWithIdClaim";
+        String token = createValidToken("user123", "USER");
 
-        UserStatsDTO stats = orderController.getMyStats(dummyToken);
+        UserStatsDTO stats = orderController.getMyStats(token);
 
         assertNotNull(stats);
         assertEquals(BigDecimal.ZERO, stats.getTotalSpent());
@@ -115,10 +133,11 @@ class OrderControllerTest {
 
     @Test
     void getSellerStatsShouldThrowForbiddenWhenUserIsNotSeller() {
-        String clientToken = "Bearer dummyTokenWithClientRole";
+        // On génère un JWT avec le rôle CLIENT pour tester le rejet
+        String token = createValidToken("client123", "CLIENT");
 
         ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> {
-            orderController.getSellerStats(clientToken);
+            orderController.getSellerStats(token);
         });
 
         assertEquals(HttpStatus.FORBIDDEN, exception.getStatusCode());
