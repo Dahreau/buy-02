@@ -133,6 +133,7 @@ pipeline {
                         sh 'mvn org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar -Dsonar.projectKey=buy-02-cart -Dsonar.projectName="buy-02-cart" -Djava.net.preferIPv4Stack=true -Dsonar.exclusions=**/target/**,**/node_modules/**,**/*.spec.ts,**/generated-sources/** -Dsonar.java.binaries=target/classes'
                     }
                     waitForQualityGate(abortPipeline: true)
+                }
             }
         }
         
