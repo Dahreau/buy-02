@@ -150,6 +150,26 @@ services:
     networks:
       - buy-net
 
+  cart-service:
+    build: ./backend/cart-service
+    ports:
+      - "8085:8085"
+    environment:
+      - SPRING_DATA_MONGODB_URI=mongodb://mongo:27017/cartdb
+      - JWT_SECRET=${JWT_SECRET}
+      - INTERNAL_TOKEN=${INTERNAL_TOKEN}
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+        reservations:
+          memory: 256m
+    depends_on:
+      - mongo
+      - product-service
+    networks:
+      - buy-net
+
 
 volumes:
   mongo-data:

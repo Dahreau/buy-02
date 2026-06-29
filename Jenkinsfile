@@ -86,6 +86,13 @@ pipeline {
                         }
                     }
                 }
+                stage('Cart Service Test') {
+                    steps {
+                        dir('backend/cart-service') {
+                            sh 'mvn clean test -DforkCount=1 -DreuseForks=false'
+                        }
+                    }
+                }
             }
         }
 
@@ -117,6 +124,13 @@ pipeline {
                     script { env.CURRENT_SERVICE = 'Order Service' }
                     withSonarQubeEnv('sonarqube') {
                         sh 'mvn org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar -Dsonar.projectKey=buy-02-order -Dsonar.projectName="buy-02-order" -Djava.net.preferIPv4Stack=true -Dsonar.exclusions=**/target/**,**/node_modules/**,**/*.spec.ts,**/generated-sources/** -Dsonar.java.binaries=target/classes'
+                    }
+                    waitForQualityGate(abortPipeline: true)
+                }
+                dir('backend/cart-service') {
+                    script { env.CURRENT_SERVICE = 'Cart Service' }
+                    withSonarQubeEnv('sonarqube') {
+                        sh 'mvn org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar -Dsonar.projectKey=buy-02-cart -Dsonar.projectName="buy-02-cart" -Djava.net.preferIPv4Stack=true -Dsonar.exclusions=**/target/**,**/node_modules/**,**/*.spec.ts,**/generated-sources/** -Dsonar.java.binaries=target/classes'
                     }
                     waitForQualityGate(abortPipeline: true)
                 }
@@ -155,20 +169,20 @@ pipeline {
                     '''
                     
                     try {
-                        sh 'docker compose -p buy-01 build frontend user-service product-service media-service order-service'
-                        sh 'docker compose -p buy-01 up -d --force-recreate frontend user-service product-service media-service order-service'
+                        sh 'docker compose -p buy-01 build frontend user-service product-service media-service order-service cart-service'
+                        sh 'docker compose -p buy-01 up -d --force-recreate frontend user-service product-service media-service order-service cart-service'
                         sh 'echo "Waiting for services to stabilize..." && sleep 10'
                         
                     } catch (Exception e) {
                         echo '❌ Error detected, rollback starting...'
                         sh '''
-                            for service in frontend user-service product-service media-service order-service; do
+                            for service in frontend user-service product-service media-service order-service cart-service; do
                                 if docker images --format "{{.Repository}}:{{.Tag}}" | grep -q "buy-01-${service}:latest-backup"; then
                                     docker tag buy-01-${service}:latest-backup buy-01-${service}:latest
                                     echo "Restored buy-01-${service}"
                                 fi
                             done
-                            docker compose -p buy-01 up -d --force-recreate frontend user-service product-service media-service order-service
+                            docker compose -p buy-01 up -d --force-recreate frontend user-service product-service media-service order-service cart-service
                         '''
                         error('Deployment failed and rollback executed. Check logs for details.')
                     }
@@ -182,14 +196,14 @@ pipeline {
                 script {
                     echo 'Manual rollback triggered...'
                     sh '''
-                        for service in frontend user-service product-service media-service order-service; do
+                        for service in frontend user-service product-service media-service order-service cart-service; do
                             if docker images --format "{{.Repository}}:{{.Tag}}" | grep -q "buy-01-${service}:latest-backup"; then
                                 docker tag buy-01-${service}:latest-backup buy-01-${service}:latest
                                 echo "Restored buy-01-${service}"
 
                             fi
                         done
-                        docker compose -p buy-01 up -d --force-recreate frontend user-service product-service media-service order-service
+                        docker compose -p buy-01 up -d --force-recreate frontend user-service product-service media-service order-service cart-service
                     '''
                     echo '✅ Rollback completed. Services should be restored to previous stable versions.'
                 }
@@ -215,6 +229,7 @@ pipeline {
                     - Product Service : http://sonarqube:9000/dashboard?id=buy-02-product
                     - Media Service : http://sonarqube:9000/dashboard?id=buy-02-media
                     - Order Service : http://sonarqube:9000/dashboard?id=buy-02-order
+                    - Cart Service : http://sonarqube:9000/dashboard?id=buy-02-cart
                     - Frontend : http://sonarqube:9000/dashboard?id=buy-02-front
                     
                     Job: ${env.JOB_NAME}
@@ -238,6 +253,7 @@ pipeline {
                     - Product Service : http://sonarqube:9000/dashboard?id=buy-02-product
                     - Media Service : http://sonarqube:9000/dashboard?id=buy-02-media
                     - Order Service : http://sonarqube:9000/dashboard?id=buy-02-order
+                    - Cart Service : http://sonarqube:9000/dashboard?id=buy-02-cart
                     - Frontend : http://sonarqube:9000/dashboard?id=buy-02-front
                     
                     Job: ${env.JOB_NAME}
