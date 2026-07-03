@@ -56,10 +56,11 @@ export class ProductListComponent implements OnInit {
   fetchImages(productList: any[]) {
     for (const p of productList) {
       const pid = p.id || p._id;
-      this.media.byProduct(pid).subscribe(
-        meds => { p.images = meds; }, 
-        _ => { p.images = []; }
-      );
+      this.media.byProduct(pid).subscribe({
+        next: meds => { p.images = meds; },
+        error: _ => { p.images = []; }
+      });
     }
   }
+  
 }
