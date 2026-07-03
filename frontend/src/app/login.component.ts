@@ -5,13 +5,13 @@ import { AuthService } from './services/auth.service';
 @Component({
   selector: 'app-login',
   template: `
-    <h3>Login</h3>
-    <form (submit)="login($event)">
-      <label>Email: <input name="email" [(ngModel)]="email"></label><br/>
-      <label>Password: <input type="password" name="password" [(ngModel)]="password"></label><br/>
-      <button type="submit">Login</button>
+    <form class="form" (submit)="login($event)">
+      <p class="heading">Login</p>
+      <input class="input" placeholder="Username" type="text" name="email" [(ngModel)]="email">
+      <input class="input" placeholder="Password" type="password" name="password" [(ngModel)]="password">
+      <button class="btn" type="submit">Submit</button>
+      <div *ngIf="error" style="color:red; text-align:center; margin-top: 0.5rem;">{{error}}</div>
     </form>
-    <div *ngIf="error" style="color:red">{{error}}</div>
   `
 })
 export class LoginComponent {
