@@ -11,4 +11,7 @@ export class ProductService {
   create(body: any) { return this.http.post(this.base, body); }
   update(id: string, body: any) { return this.http.put(this.base + '/' + id, body); }
   delete(id: string) { return this.http.delete(this.base + '/' + id); }
+  search(term: string, page: number = 0, size: number = 10) {
+    return this.http.get<any>(`${this.base}/search?keyword=${term}&page=${page}&size=${size}`);
+}
 }

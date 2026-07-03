@@ -28,22 +28,38 @@ import { MediaService } from './services/media.service';
 export class ProductListComponent implements OnInit {
   products: any[] = [];
   filteredProducts: any[] = [];
+
   constructor(private productService: ProductService, private media: MediaService) {}
+
   ngOnInit() {
     this.productService.listAll().subscribe(data => {
       this.products = data;
       this.filteredProducts = data;
       // Fetch media for each product (best-effort)
-      for (const p of this.products) {
-        const pid = p.id || p._id;
-        this.media.byProduct(pid).subscribe(meds => { p.images = meds; }, _ => { p.images = []; });
-      }
+      this.fetchImages(this.filteredProducts);
     });
   }
 
   onSearch(term: string) {
-    const t = (term || '').toLowerCase().trim();
-    if (!t) { this.filteredProducts = this.products; return; }
-    this.filteredProducts = this.products.filter(p => (p.name || '').toLowerCase().includes(t) || (p.description || '').toLowerCase().includes(t));
+    const t = (term || '').trim();
+    if (!t) { 
+      this.filteredProducts = this.products; 
+      return; 
+    }
+    
+    this.productService.search(t, 0, 10).subscribe(response => {
+      this.filteredProducts = response.content;
+      this.fetchImages(this.filteredProducts);
+    });
+  }
+
+  fetchImages(productList: any[]) {
+    for (const p of productList) {
+      const pid = p.id || p._id;
+      this.media.byProduct(pid).subscribe(
+        meds => { p.images = meds; }, 
+        _ => { p.images = []; }
+      );
+    }
   }
 }
