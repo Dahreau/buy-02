@@ -1,4 +1,4 @@
-<div class="cart-backdrop" [class.show]="isOpen" (click)="toggleCart()"></div>
+<button class="cart-backdrop" [class.show]="isOpen" (click)="toggleCart()" aria-label="Fermer le panier"></button>
 
 <div class="cart-panel" [class.open]="isOpen">
     <div class="cart-header">
