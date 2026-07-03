@@ -84,6 +84,11 @@ public class OrderController {
             @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
+
+        if (start != null && end != null && start.isAfter(end)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La date de début doit être antérieure à la date de fin");
+        }
+
         String userId = getClaim(token, "id");
         return orderService.searchOrders(userId, null, status, start, end, keyword, PageRequest.of(page, size));
     }
@@ -97,6 +102,11 @@ public class OrderController {
             @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
+
+        if (start != null && end != null && start.isAfter(end)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La date de début doit être antérieure à la date de fin");
+        }
+
         String role = getClaim(token, "role");
         if (!SELLER.equals(role)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, ERRORS);
