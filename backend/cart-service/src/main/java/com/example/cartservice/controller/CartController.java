@@ -1,7 +1,6 @@
 package com.example.cartservice.controller;
 
-import java.util.Base64;
-
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -11,12 +10,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.example.cartservice.dto.CartRequest;
 import com.example.cartservice.model.Cart;
 import com.example.cartservice.service.CartService;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,17 +25,21 @@ import lombok.RequiredArgsConstructor;
 public class CartController {
 
     private final CartService cartService;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    @org.springframework.beans.factory.annotation.Value("${jwt.secret}")
+    private String jwtSecret;
 
     private String extractUserId(String token) {
         try {
             String jwt = token.startsWith("Bearer ") ? token.substring(7) : token;
-            String payload = jwt.split("\\.")[1];
-            String decodedPayload = new String(Base64.getDecoder().decode(payload));
-            JsonNode json = objectMapper.readTree(decodedPayload);
-            return json.has("sub") ? json.get("sub").asText() : json.get("id").asText();
-        } catch (Exception e) {
-            throw new RuntimeException("Token invalide ou erreur d'authentification");
+            io.jsonwebtoken.Claims claims = io.jsonwebtoken.Jwts.parserBuilder()
+                    .setSigningKey(io.jsonwebtoken.security.Keys.hmacShaKeyFor(jwtSecret.getBytes(java.nio.charset.StandardCharsets.UTF_8)))
+                    .build()
+                    .parseClaimsJws(jwt)
+                    .getBody();
+
+            return claims.getSubject();
+        } catch (io.jsonwebtoken.JwtException | IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token invalide ou forgé", e);
         }
     }
 
