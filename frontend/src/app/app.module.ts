@@ -10,6 +10,7 @@ import { RegisterComponent } from './register.component';
 import { ProductListComponent } from './product-list.component';
 import { SellerDashboardComponent } from './seller-dashboard.component';
 import { MediaManagerComponent } from './media-manager.component';
+import { CartComponent } from './cart.component';
 import { TokenInterceptor } from './services/token.interceptor';
 import { AuthGuard } from './services/auth.guard';
 
@@ -27,7 +28,8 @@ const routes: Routes = [
     RegisterComponent,
     ProductListComponent,
     SellerDashboardComponent,
-    MediaManagerComponent
+    MediaManagerComponent,
+    CartComponent
   ],
   imports: [BrowserModule, HttpClientModule, FormsModule, RouterModule.forRoot(routes)],
   providers: [

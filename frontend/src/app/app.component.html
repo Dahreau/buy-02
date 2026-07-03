@@ -17,9 +17,13 @@
                     <li class="nav-item"><a class="nav-link" routerLink="/register">Register</a></li>
                 </ng-template>
             </ul>
+            <button class="btn btn-primary" (click)="cart.toggleCart()">Panier</button>
+
         </div>
     </div>
 </nav>
 <div class="app-container">
     <router-outlet></router-outlet>
 </div>
+
+<app-cart #cart></app-cart>

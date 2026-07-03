@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ProductService } from './services/product.service';
 import { MediaService } from './services/media.service';
+import { CartService } from './services/cart.service';
 
 @Component({
   selector: 'app-product-list',
@@ -25,6 +26,7 @@ import { MediaService } from './services/media.service';
           <h5 class="card-title">{{p.name}} <span class="badge bg-primary">{{p.price | currency}}</span></h5>
           <div class="small-id">id: {{p.id || p._id}}</div>
           <p class="card-text product-description">{{p.description}}</p>
+          <button class="btn btn-sm btn-success mt-2" (click)="addToCart(p.id || p._id)">Ajouter au panier</button>
         </div>
       </div>
     </div>
@@ -35,7 +37,7 @@ export class ProductListComponent implements OnInit {
   products: any[] = [];
   filteredProducts: any[] = [];
 
-  constructor(private productService: ProductService, private media: MediaService) {}
+  constructor(private readonly productService: ProductService, private readonly media: MediaService, private readonly cartService: CartService) {}
 
   ngOnInit() {
     this.productService.listAll().subscribe(data => {
@@ -71,5 +73,13 @@ export class ProductListComponent implements OnInit {
       });
     }
   }
-  
+
+  addToCart(productId: string) {
+    if (!productId) return;
+    
+    this.cartService.addToCart({ productId, quantity: 1 }).subscribe({
+      next: () => console.log('Produit ajouté au panier avec succès'),
+      error: err => console.error('Erreur lors de l\'ajout', err)
+    });
+  }
 }

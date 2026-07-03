@@ -30,8 +30,9 @@ class ProductControllerTest {
     @Autowired
     private ProductRepository productRepository;
 
+    @SuppressWarnings("unused")
     @BeforeEach
-    public void cleanup() {
+    void cleanup() {
         productRepository.deleteAll();
     }
 
