@@ -3,8 +3,8 @@ import { HttpClient } from '@angular/common/http';
 
 @Injectable({ providedIn: 'root' })
 export class ProductService {
-  private base = 'http://localhost:8082/api/products';
-  constructor(private http: HttpClient) {}
+  private readonly base = 'http://localhost:8082/api/products';
+  constructor(private readonly http: HttpClient) {}
 
   listAll() { return this.http.get<any[]>(this.base); }
   getOne(id: string) { return this.http.get(this.base + '/' + id); }

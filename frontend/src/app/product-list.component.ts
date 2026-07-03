@@ -48,8 +48,8 @@ export class ProductListComponent implements OnInit {
 
   onSearch(term: string, minPrice: string, maxPrice: string) {
     const t = (term || '').trim();
-    const min = parseFloat(minPrice) || 0;
-    const max = parseFloat(maxPrice) || 1000000;
+    const min = Number.parseFloat(minPrice) || 0;
+    const max = Number.parseFloat(maxPrice) || 1000000;
 
     this.productService.search(t, min, max, 0, 10).subscribe({
       next: response => {
