@@ -42,9 +42,11 @@ class CartServiceTest {
     @Mock
     private WebClient webClient;
 
+    @SuppressWarnings("rawtypes")
     @Mock
     private WebClient.RequestHeadersUriSpec requestHeadersUriSpec;
 
+    @SuppressWarnings("rawtypes")
     @Mock
     private WebClient.RequestHeadersSpec requestHeadersSpec;
 
@@ -54,6 +56,7 @@ class CartServiceTest {
     @InjectMocks
     private CartService cartService;
 
+    @SuppressWarnings({"unchecked", "unused"})
     @BeforeEach
     void setUp() {
         lenient().when(webClientBuilder.build()).thenReturn(webClient);
@@ -147,7 +150,8 @@ class CartServiceTest {
 
         when(responseSpec.bodyToMono(ProductDTO.class)).thenReturn(Mono.empty());
 
-        assertThrows(RuntimeException.class, () -> cartService.addToCart("user1", request));
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> cartService.addToCart("user1", request));
+        assertEquals("Produit non trouvé", exception.getMessage());
     }
 
     @Test
@@ -160,9 +164,13 @@ class CartServiceTest {
         product.setId("p1");
         product.setQuantity(10);
 
-        when(responseSpec.bodyToMono(ProductDTO.class)).thenReturn(Mono.just(product));
+        Cart cart = Cart.builder().userId("user1").items(new ArrayList<>()).build();
 
-        assertThrows(RuntimeException.class, () -> cartService.addToCart("user1", request));
+        when(responseSpec.bodyToMono(ProductDTO.class)).thenReturn(Mono.just(product));
+        when(cartRepository.findByUserId("user1")).thenReturn(Optional.of(cart));
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> cartService.addToCart("user1", request));
+        assertEquals("Stock insuffisant", exception.getMessage());
     }
 
     @Test

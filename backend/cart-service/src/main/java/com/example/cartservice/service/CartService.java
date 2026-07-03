@@ -1,17 +1,19 @@
 package com.example.cartservice.service;
 
+import java.util.ArrayList;
+import java.util.Optional;
+
+import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
+
 import com.example.cartservice.dto.CartRequest;
 import com.example.cartservice.dto.ProductDTO;
 import com.example.cartservice.model.Cart;
 import com.example.cartservice.model.CartItem;
 import com.example.cartservice.repository.CartRepository;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
-
-import java.util.ArrayList;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -33,13 +35,7 @@ public class CartService {
 
         if (product == null) {
             log.error("Produit non trouvé : {}", request.getProductId());
-            throw new RuntimeException("Produit non trouvé");
-        }
-
-        if (product.getQuantity() < request.getQuantity()) {
-            log.warn("Stock insuffisant pour le produit {} : {} requis, {} disponibles",
-                    product.getId(), request.getQuantity(), product.getQuantity());
-            throw new RuntimeException("Stock insuffisant");
+            throw new IllegalArgumentException("Produit non trouvé");
         }
 
         Cart cart = getCartByUserId(userId);
@@ -48,8 +44,17 @@ public class CartService {
                 .filter(item -> item.getProductId().equals(request.getProductId()))
                 .findFirst();
 
+        int currentQuantity = existingItem.map(CartItem::getQuantity).orElse(0);
+        int newTotalQuantity = currentQuantity + request.getQuantity();
+
+        if (product.getQuantity() < newTotalQuantity) {
+            log.warn("Stock insuffisant pour le produit {} : {} requis au total, {} disponibles",
+                    product.getId(), newTotalQuantity, product.getQuantity());
+            throw new IllegalStateException("Stock insuffisant");
+        }
+
         if (existingItem.isPresent()) {
-            existingItem.get().setQuantity(existingItem.get().getQuantity() + request.getQuantity());
+            existingItem.get().setQuantity(newTotalQuantity);
         } else {
             cart.getItems().add(CartItem.builder()
                     .productId(product.getId())
@@ -69,11 +74,11 @@ public class CartService {
         CartItem item = cart.getItems().stream()
                 .filter(i -> i.getProductId().equals(request.getProductId()))
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("Produit non trouvé dans le panier"));
+                .orElseThrow(() -> new IllegalArgumentException("Produit non trouvé dans le panier"));
 
         ProductDTO product = fetchProductDetails(request.getProductId());
         if (product.getQuantity() < request.getQuantity()) {
-            throw new RuntimeException("Stock insuffisant");
+            throw new IllegalStateException("Stock insuffisant");
         }
 
         item.setQuantity(request.getQuantity());
@@ -103,7 +108,7 @@ public class CartService {
                     .block();
         } catch (Exception e) {
             log.error("Erreur lors de l'appel au product-service : {}", e.getMessage());
-            throw new RuntimeException("Impossible de vérifier le produit : " + e.getMessage());
+            throw new IllegalStateException("Impossible de vérifier le produit : " + e.getMessage(), e);
         }
     }
 }
