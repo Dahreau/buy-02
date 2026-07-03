@@ -18,7 +18,7 @@ export interface Cart {
   providedIn: 'root'
 })
 export class CartService {
-  private readonly apiUrl = 'http://localhost:8080/api/carts';
+  private readonly apiUrl = 'http://localhost:8085/api/carts';
 
   constructor(private readonly http: HttpClient) {}
 
