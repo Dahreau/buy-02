@@ -15,8 +15,8 @@
         <div *ngIf="cart && cart.items?.length">
             <div class="cart-item" *ngFor="let item of cart.items">
                 <div class="item-info">
-                    <p>Produit ID: {{ item.productId }}</p>
-                    <p>Prix: {{ item.price | currency }}</p>
+                    <p>Produit : {{ item.productName }}</p>
+                    <p>Prix: {{ item.price*item.quantity | currency }}</p>
                 </div>
 
                 <div class="item-actions">
@@ -32,6 +32,6 @@
     <div class="cart-footer" *ngIf="cart && cart.items?.length">
         <h4>Total : {{ cart.totalPrice | currency }}</h4>
         <button class="clear-btn" (click)="clearCart()">Vider le panier</button>
-        <button class="checkout-btn">Payer à la livraison</button>
+        <button class="checkout-btn">Payer</button>
     </div>
 </div>
