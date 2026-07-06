@@ -18,7 +18,7 @@ export class LoginComponent {
   email = '';
   password = '';
   error = '';
-  constructor(private auth: AuthService, private router: Router) {}
+  constructor(private readonly auth: AuthService, private readonly router: Router) {}
 
   login(evt: Event) {
     evt.preventDefault();

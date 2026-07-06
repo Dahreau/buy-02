@@ -64,7 +64,7 @@ export class SellerDashboardComponent implements OnInit {
   deleteProductId = '';
   deleteError = '';
   currentUserId: string | null = null;
-  constructor(private productService: ProductService, private media: MediaService, private auth: AuthService) {}
+  constructor(private readonly productService: ProductService, private readonly media: MediaService, private readonly auth: AuthService) {}
   ngOnInit(): void { this.loadMyProducts(); }
 
   loadMyProducts() {
@@ -84,7 +84,10 @@ export class SellerDashboardComponent implements OnInit {
       
       for (const p of this.myProducts) {
         const pid = p.id || p._id;
-        this.media.byProduct(pid).subscribe(meds => p.images = meds, _ => p.images = []);
+        this.media.byProduct(pid).subscribe({
+          next: meds => p.images = meds,
+          error: _ => p.images = []
+        });
       }
     });
   }
