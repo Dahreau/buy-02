@@ -25,6 +25,9 @@ export class CartComponent implements OnInit {
 
   toggleCart(): void {
     this.isOpen = !this.isOpen;
+    if (this.isOpen) {
+      this.loadCart();
+    }
   }
 
   updateQuantity(productId: string, quantity: number): void {
