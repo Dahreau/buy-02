@@ -1,10 +1,10 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 
 @Injectable({ providedIn: 'root' })
 export class MediaService {
-  private base = 'http://localhost:8083/api/media';
-  constructor(private http: HttpClient) {}
+  private readonly base = 'http://localhost:8083/api/media';
+  constructor(private readonly http: HttpClient) {}
 
   upload(file: File, productId: string) {
     const form = new FormData();

@@ -1,5 +1,6 @@
 package com.example.cartservice.service;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Optional;
 
@@ -105,6 +106,7 @@ public class CartService {
                     .uri("http://product-service:8082/api/products/" + productId)
                     .retrieve()
                     .bodyToMono(ProductDTO.class)
+                    .timeout(Duration.ofSeconds(5))
                     .block();
         } catch (Exception e) {
             log.error("Erreur lors de l'appel au product-service : {}", e.getMessage());

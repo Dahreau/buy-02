@@ -1,0 +1,37 @@
+<button class="cart-backdrop" [class.show]="isOpen" (click)="toggleCart()" aria-label="Fermer le panier"></button>
+
+<div class="cart-panel" [class.open]="isOpen">
+    <div class="cart-header">
+        <h3>Mon Panier</h3>
+        <button class="close-btn" (click)="toggleCart()">X</button>
+    </div>
+
+    <div class="cart-body">
+
+        <div *ngIf="!cart || cart.items?.length === 0" class="empty-cart">
+            Ton panier est vide.
+        </div>
+
+        <div *ngIf="cart && cart.items?.length">
+            <div class="cart-item" *ngFor="let item of cart.items">
+                <div class="item-info">
+                    <p>Produit : {{ item.productName }}</p>
+                    <p>Prix: {{ item.price*item.quantity | currency }}</p>
+                </div>
+
+                <div class="item-actions">
+                    <button (click)="updateQuantity(item.productId, item.quantity - 1)">-</button>
+                    <span>{{ item.quantity }}</span>
+                    <button (click)="updateQuantity(item.productId, item.quantity + 1)">+</button>
+                    <button class="remove-btn" (click)="removeItem(item.productId)">Supprimer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="cart-footer" *ngIf="cart && cart.items?.length">
+        <h4>Total : {{ cart.totalPrice | currency }}</h4>
+        <button class="clear-btn" (click)="clearCart()">Vider le panier</button>
+        <button class="checkout-btn">Payer</button>
+    </div>
+</div>

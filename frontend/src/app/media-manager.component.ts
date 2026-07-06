@@ -1,4 +1,4 @@
-import { Component, OnInit, Output, EventEmitter } from '@angular/core';
+import { Component, Output, EventEmitter } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { ProductService } from './services/product.service';
 import { AuthService } from './services/auth.service';
@@ -33,7 +33,7 @@ export class MediaManagerComponent {
   file: File | null = null;
   error = '';
   products: any[] = [];
-  constructor(private http: HttpClient, private productService: ProductService, private auth: AuthService) {}
+  constructor(private readonly http: HttpClient, private readonly productService: ProductService, private readonly auth: AuthService) {}
 
   ngOnInit(): void {
     // load products so the user can pick one by name (and we show the id in the option)

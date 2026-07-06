@@ -5,11 +5,11 @@ import { BehaviorSubject, Observable } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private base = 'http://localhost:8081/api/auth';
-  private loggedIn = new BehaviorSubject<boolean>(!!this.getToken());
+  private readonly base = 'http://localhost:8081/api/auth';
+  private readonly loggedIn = new BehaviorSubject<boolean>(!!this.getToken());
   public isLoggedIn$: Observable<boolean> = this.loggedIn.asObservable();
 
-  constructor(private http: HttpClient, private router: Router) {}
+  constructor(private readonly http: HttpClient, private readonly router: Router) {}
 
   register(body: any) { return this.http.post<any>(`${this.base}/register`, body); }
   login(body: any) { return this.http.post<any>(`${this.base}/login`, body); }
