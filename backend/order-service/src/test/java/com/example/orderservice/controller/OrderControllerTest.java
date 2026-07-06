@@ -73,15 +73,26 @@ class OrderControllerTest {
                 .compact();
     }
 
+    private void setMockUser(String id, String role) {
+        org.springframework.security.core.context.SecurityContext context = org.springframework.security.core.context.SecurityContextHolder.createEmptyContext();
+        org.springframework.security.authentication.UsernamePasswordAuthenticationToken auth
+                = new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(id, null, java.util.List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_" + role)));
+        context.setAuthentication(auth);
+        org.springframework.security.core.context.SecurityContextHolder.setContext(context);
+    }
+
     @BeforeEach
+    @SuppressWarnings("unused")
     void setUp() {
         orderRepository.deleteAll();
+        org.springframework.security.core.context.SecurityContextHolder.clearContext();
     }
 
     @Test
     @SuppressWarnings("unchecked")
     void checkoutValidCartShouldCreateOrderAndReturn200() {
         String token = createValidToken("user123", "USER");
+        setMockUser("user123", "USER");
 
         CartItemDTO item = new CartItemDTO();
         item.setProductId("prod123");
@@ -97,11 +108,11 @@ class OrderControllerTest {
         when(webClientBuilder.build()).thenReturn(webClient);
         when(webClient.get()).thenReturn(requestHeadersUriSpec);
         when(webClient.delete()).thenReturn(requestHeadersUriSpec);
-        
+
         when(requestHeadersUriSpec.uri(anyString())).thenReturn(requestHeadersSpec);
         when(requestHeadersSpec.header(anyString(), anyString())).thenReturn(requestHeadersSpec);
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
-        
+
         when(responseSpec.bodyToMono(CartDTO.class)).thenReturn(Mono.just(dummyCart));
         when(responseSpec.toBodilessEntity()).thenReturn(Mono.empty());
 
@@ -122,9 +133,9 @@ class OrderControllerTest {
 
     @Test
     void getUserStatsShouldReturnEmptyStatsWhenNoOrdersExist() {
-        String token = createValidToken("user123", "USER");
+        setMockUser("user123", "USER");
 
-        UserStatsDTO stats = orderController.getMyStats(token);
+        UserStatsDTO stats = orderController.getMyStats();
 
         assertNotNull(stats);
         assertEquals(0, BigDecimal.ZERO.compareTo(stats.getTotalSpent()));
@@ -134,10 +145,10 @@ class OrderControllerTest {
 
     @Test
     void getSellerStatsShouldThrowForbiddenWhenUserIsNotSeller() {
-        String token = createValidToken("client123", "CLIENT");
+        setMockUser("client123", "CLIENT");
 
         ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> {
-            orderController.getSellerStats(token);
+            orderController.getSellerStats();
         });
 
         assertEquals(HttpStatus.FORBIDDEN, exception.getStatusCode());

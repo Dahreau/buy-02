@@ -41,4 +41,8 @@ export class CartService {
   clearCart(): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/clear`);
   }
+
+  checkoutCart(request: { shippingAddress: string; paymentMethod: string }): Observable<any> {
+    return this.http.post<any>('http://localhost:8084/api/orders/checkout', request);
+  }
 }

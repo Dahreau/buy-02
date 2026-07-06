@@ -27,6 +27,11 @@
                 </div>
             </div>
         </div>
+        <div *ngIf="cart && cart.items && cart.items.length" class="checkout-section">
+            <input type="text" [(ngModel)]="shippingAddress" placeholder="Entrez votre adresse de livraison"
+                class="shipping-input">
+            <button class="checkout-btn" (click)="validateCart()">Payer à la livraison</button>
+        </div>
     </div>
 
     <div class="cart-footer" *ngIf="cart && cart.items?.length">
