@@ -9,6 +9,7 @@ import { CartService, Cart, CartRequest } from './services/cart.service';
 export class CartComponent implements OnInit {
   cart: Cart | null = null;
   isOpen = false;
+  shippingAddress: string = '';
 
   constructor(private readonly cartService: CartService) {}
 
@@ -52,6 +53,30 @@ export class CartComponent implements OnInit {
     this.cartService.clearCart().subscribe({
       next: () => this.cart = null,
       error: (err) => console.error(err)
+    });
+  }
+
+  validateCart(): void {
+    if (!this.shippingAddress || this.shippingAddress.trim() === '') {
+      alert('Veuillez entrer une adresse de livraison.');
+      return;
+    }
+
+    const payload = {
+      shippingAddress: this.shippingAddress,
+      paymentMethod: 'PAY_ON_DELIVERY'
+    };
+
+    this.cartService.checkoutCart(payload).subscribe({
+      next: () => {
+        this.isOpen = false;
+        this.shippingAddress = '';
+        this.loadCart();
+        alert('Commande validée avec succès ! Paiement à la livraison.');
+      },
+      error: (err) => {
+        console.error('Erreur lors de la validation', err);
+      }
     });
   }
 }
