@@ -14,6 +14,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+@lombok.extern.slf4j.Slf4j
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
@@ -36,6 +37,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(auth);
                 }
             } catch (Exception e) {
+                log.error("Erreur de validation du token JWT : {}", e.getMessage());
+                SecurityContextHolder.clearContext();
             }
         }
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
