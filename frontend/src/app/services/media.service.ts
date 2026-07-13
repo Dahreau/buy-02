@@ -1,19 +1,16 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs'; // ← AJOUTER CETTE LIGNE
 
 @Injectable({ providedIn: 'root' })
 export class MediaService {
-  private readonly base = 'http://localhost:8083/api/media';
-  constructor(private readonly http: HttpClient) {}
+  constructor(private http: HttpClient) {}
 
-  upload(file: File, productId: string) {
-    const form = new FormData();
-    form.append('file', file);
-    form.append('productId', productId);
-    return this.http.post(this.base + '/upload', form);
+  upload(formData: FormData): Observable<any> {
+    return this.http.post('/api/media/upload', formData);
   }
 
-  byProduct(productId: string) {
-    return this.http.get<any[]>(`${this.base}/product/${productId}`);
+  byProduct(productId: string): Observable<any[]> {
+    return this.http.get<any[]>(`/api/media/product/${productId}`);
   }
 }

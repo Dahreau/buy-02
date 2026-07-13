@@ -1,29 +1,35 @@
 <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
-    <div class="container-fluid app-container">
-        <a class="navbar-brand" routerLink="/">Buy</a>
-        <div class="collapse navbar-collapse">
-            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                <li class="nav-item"><a class="nav-link" routerLink="/">Products</a></li>
-                <li class="nav-item"><a class="nav-link" routerLink="/seller">Seller Dashboard NON</a></li>
-            </ul>
-            <ul class="navbar-nav ms-auto">
-                <ng-container *ngIf="isLoggedIn$ | async; else guestLinks">
-                    <li class="nav-item">
-                        <a class="nav-link" (click)="logout()" style="cursor: pointer">Logout</a>
-                    </li>
-                </ng-container>
-                <ng-template #guestLinks>
-                    <li class="nav-item"><a class="nav-link" routerLink="/login">Login</a></li>
-                    <li class="nav-item"><a class="nav-link" routerLink="/register">Register</a></li>
-                </ng-template>
-            </ul>
-            <button class="btn btn-primary" (click)="cart.toggleCart()">Panier</button>
-
-        </div>
+  <div class="container-fluid app-container">
+    <a class="navbar-brand" routerLink="/">Buy</a>
+    <div class="collapse navbar-collapse">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item"><a class="nav-link" routerLink="/">Products</a></li>
+        <!-- ✅ Correction ici -->
+        <li class="nav-item" *ngIf="(isLoggedIn$ | async) && isSeller()">
+          <a class="nav-link" routerLink="/seller">📊 Dashboard vendeur</a>
+        </li>
+        <li class="nav-item" *ngIf="isLoggedIn$ | async">
+          <a class="nav-link" routerLink="/profile/mes-commandes">📋 Mes commandes</a>
+        </li>
+      </ul>
+      <ul class="navbar-nav ms-auto">
+        <ng-container *ngIf="isLoggedIn$ | async; else guestLinks">
+          <li class="nav-item">
+            <a class="nav-link" (click)="logout()" style="cursor: pointer">Logout</a>
+          </li>
+        </ng-container>
+        <ng-template #guestLinks>
+          <li class="nav-item"><a class="nav-link" routerLink="/login">Login</a></li>
+          <li class="nav-item"><a class="nav-link" routerLink="/register">Register</a></li>
+        </ng-template>
+      </ul>
+      <button class="btn btn-primary" (click)="toggleCart()">🛒 Panier</button>
     </div>
+  </div>
 </nav>
+
 <div class="app-container">
-    <router-outlet></router-outlet>
+  <router-outlet></router-outlet>
 </div>
 
 <app-cart #cart></app-cart>

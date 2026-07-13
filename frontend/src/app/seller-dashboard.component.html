@@ -1,0 +1,221 @@
+<div class="dashboard-header">
+  <div>
+    <h1 class="page-title">📊 Tableau de bord vendeur</h1>
+    <p class="page-subtitle">Gérez vos produits en toute simplicité</p>
+  </div>
+  <div class="vendor-badge">
+    <span class="dot"></span> En ligne
+  </div>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon">📦</div>
+    <div>
+      <div class="stat-label">Total produits</div>
+      <div class="stat-value">{{ myProducts.length }}</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">🔄</div>
+    <div>
+      <div class="stat-label">En attente</div>
+      <div class="stat-value">0</div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== FORMULAIRE PRODUIT ==================== -->
+<div class="form-card">
+  <h4 class="form-title">✨ {{ editingProductId ? 'Modifier le produit' : 'Ajouter un nouveau produit' }}</h4>
+  <form (submit)="saveProduct($event)">
+    <div *ngIf="editingProductId" class="alert alert-info mb-3">
+      Mode édition actif sur le produit sélectionné.
+      <button type="button" class="btn btn-link p-0 ms-2" (click)="cancelEdit()">Annuler</button>
+    </div>
+
+    <div class="form-group full-width">
+      <label>Nom du produit</label>
+      <input class="form-control" placeholder="Ex: Sweat à capuche oversize" [(ngModel)]="name" name="name" />
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>💰 Prix (€)</label>
+        <input class="form-control" type="number" placeholder="0.00" [(ngModel)]="price" name="price" />
+      </div>
+      <div class="form-group">
+        <label>📊 Quantité</label>
+        <input class="form-control" type="number" placeholder="0" [(ngModel)]="quantity" name="quantity" />
+      </div>
+    </div>
+
+    <div class="form-group full-width">
+      <label>📝 Description</label>
+      <textarea class="form-control" rows="2" placeholder="Décrivez votre produit..." [(ngModel)]="description" name="description"></textarea>
+    </div>
+
+    <!-- Upload images -->
+    <div class="form-group full-width">
+      <label>🖼️ Images du produit</label>
+      <input type="file" multiple accept="image/*" (change)="onFileSelected($event)" class="form-control" />
+      <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;">
+        <!-- Images existantes -->
+        <div *ngFor="let img of existingImages" style="position: relative; width: 80px; height: 80px; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0;">
+          <img [src]="img.imagePath" style="width:100%; height:100%; object-fit:cover;" />
+          <button type="button" (click)="removeExistingImage(img.id)" style="position:absolute; top:-5px; right:-5px; background:red; color:white; border:none; border-radius:50%; width:20px; height:20px; cursor:pointer; font-size:12px;">×</button>
+        </div>
+        <!-- Aperçus nouvelles images -->
+        <div *ngFor="let preview of imagePreviews; let i = index" style="position: relative; width: 80px; height: 80px; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0;">
+          <img [src]="preview" style="width:100%; height:100%; object-fit:cover;" />
+          <button type="button" (click)="removeTempImage(i)" style="position:absolute; top:-5px; right:-5px; background:red; color:white; border:none; border-radius:50%; width:20px; height:20px; cursor:pointer; font-size:12px;">×</button>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-submit" type="submit">{{ editingProductId ? '💾 Mettre à jour' : '➕ Créer le produit' }}</button>
+  </form>
+</div>
+
+<!-- ==================== LISTE DES PRODUITS ==================== -->
+<div class="products-header">
+  <h4>🛍️ Vos produits</h4>
+  <span class="products-count">{{ myProducts.length }} article(s)</span>
+</div>
+
+<div *ngIf="myProducts.length === 0" class="empty-state">
+  <div class="empty-icon">📭</div>
+  <p>Aucun produit pour le moment.<br />Commencez par en créer un !</p>
+</div>
+
+<div class="products-grid">
+  <div class="product-card" *ngFor="let p of myProducts">
+    <div class="product-image-wrapper">
+      <img *ngIf="p.images && p.images.length" [src]="p.images[0].imagePath" alt="{{p.name}}" />
+      <div *ngIf="!p.images || !p.images.length" class="no-image">🖼️</div>
+      <span class="stock-badge" 
+            [class.in-stock]="p.quantity > 5" 
+            [class.low-stock]="p.quantity <= 5 && p.quantity > 0" 
+            [class.out-of-stock]="p.quantity === 0">
+        {{ p.quantity === 0 ? 'Rupture' : (p.quantity <= 5 ? 'Stock faible' : 'En stock') }}
+      </span>
+    </div>
+
+    <div class="product-body">
+      <div class="product-header">
+        <h5 class="product-name">{{ p.name }}</h5>
+        <span class="product-price">{{ p.price | currency:'EUR' }}</span>
+      </div>
+      <p class="product-description">{{ p.description || 'Aucune description' }}</p>
+      <div class="product-meta">
+        <span class="product-id">🆔 {{ (p.id || p._id) | slice:0:8 }}...</span>
+        <span class="product-qty">📦 {{ p.quantity }} unités</span>
+      </div>
+      <div class="product-actions">
+        <button class="btn-edit" type="button" (click)="editProduct(p)">✏️ Modifier</button>
+        <button class="btn-delete" type="button" (click)="confirmDelete(p)">🗑️ Supprimer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== STATISTIQUES VENDEUR ==================== -->
+<div class="stats-grid" *ngIf="stats">
+  <div class="stat-card">
+    <div class="stat-icon">💰</div>
+    <div>
+      <div class="stat-label">Chiffre d'affaires</div>
+      <div class="stat-value">{{ stats.totalRevenue | currency:'EUR' }}</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">📦</div>
+    <div>
+      <div class="stat-label">Commandes terminées</div>
+      <div class="stat-value">{{ stats.completedOrders }}</div>
+    </div>
+  </div>
+  <div class="stat-card" *ngIf="stats.bestSellers?.length">
+    <div class="stat-icon">⭐</div>
+    <div>
+      <div class="stat-label">Meilleur vendeur</div>
+      <div class="stat-value">{{ stats.bestSellers[0]?.productName || '-' }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== COMMANDES REÇUES ==================== -->
+<div class="products-header">
+  <h4>📋 Commandes reçues</h4>
+  <span class="products-count">{{ orders.length }} commande(s)</span>
+</div>
+
+<div *ngIf="orders.length === 0" class="empty-state">
+  <div class="empty-icon">📭</div>
+  <p>Aucune commande reçue pour le moment.</p>
+</div>
+
+<div class="products-grid" *ngIf="orders.length > 0">
+  <div class="product-card" *ngFor="let order of orders">
+    <div class="product-body">
+      <div class="product-header">
+        <h5 class="product-name" style="font-size: 1rem;">
+          Commande #{{ order.id | slice:0:8 }}
+        </h5>
+        <span class="product-price">{{ order.total | currency:'EUR' }}</span>
+      </div>
+
+      <p class="product-description" style="font-size: 0.85rem; margin-bottom: 4px;">
+        📦 {{ order.items.length }} article(s)
+      </p>
+      <p class="product-description" style="font-size: 0.8rem; color: #6c757d;">
+        🏠 {{ order.shippingAddress || 'Non spécifiée' }}<br />
+        📅 {{ order.createdAt | date:'dd/MM/yyyy HH:mm' }}
+      </p>
+
+      <div class="product-meta">
+        <span>👤 {{ order.userId }}</span>
+        <span class="product-qty">📊 {{ order.paymentMethod || 'PAY_ON_DELIVERY' }}</span>
+      </div>
+
+      <!-- ===== NOUVEAU : BADGE + MENU COURT + BOUTON SUIVANT ===== -->
+      <div class="product-actions" style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px;">
+        <!-- Badge statut + menu déroulant -->
+        <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 140px;">
+          <span 
+            class="status-badge" 
+            [style.background]="getStatusInfo(order.status).color"
+            style="padding: 4px 12px; border-radius: 30px; color: white; font-weight: 700; font-size: 0.7rem; white-space: nowrap;">
+            {{ getStatusInfo(order.status).icon }} {{ getStatusInfo(order.status).label }}
+          </span>
+
+          <select 
+            class="form-control status-select" 
+            style="padding: 0.3rem 0.8rem; border-radius: 30px; font-size: 0.75rem; border: 1.5px solid #e2e8f0; background: white; cursor: pointer;"
+            (change)="updateOrderStatus(order.id, $event.target.value)">
+            <option *ngFor="let s of getAvailableTransitions(order.status)" 
+                    [value]="s"
+                    [selected]="s === order.status">
+              {{ getStatusInfo(s).icon }} {{ getStatusInfo(s).label }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Bouton "Suivant" (uniquement si un prochain statut existe) -->
+        <button 
+          *ngIf="getStatusInfo(order.status).next"
+          class="btn-next" 
+          type="button"
+          (click)="nextStatus(order)"
+          style="padding: 0.3rem 1rem; border-radius: 30px; border: none; background: #8b5cf6; color: white; font-weight: 700; font-size: 0.75rem; cursor: pointer; transition: 0.2s;">
+          ⏩ Suivant
+        </button>
+
+        <!-- Si la commande est annulée ou livrée, on affiche juste un libellé -->
+        <span *ngIf="!getStatusInfo(order.status).next" style="font-size: 0.7rem; color: #94a3b8; font-style: italic;">
+          (Terminée)
+        </span>
+      </div>
+    </div>
+  </div>
+</div>

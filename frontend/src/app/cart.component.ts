@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CartService, Cart, CartRequest } from './services/cart.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-cart',
@@ -11,7 +12,10 @@ export class CartComponent implements OnInit {
   isOpen = false;
   shippingAddress: string = '';
 
-  constructor(private readonly cartService: CartService) {}
+  constructor(
+  private readonly cartService: CartService,
+  private readonly router: Router      // ← ajouter
+) {}
 
   ngOnInit(): void {
     this.loadCart();
@@ -26,15 +30,11 @@ export class CartComponent implements OnInit {
 
   toggleCart(): void {
     this.isOpen = !this.isOpen;
-    if (this.isOpen) {
-      this.loadCart();
-    }
+    if (this.isOpen) this.loadCart();
   }
 
   updateQuantity(productId: string, quantity: number): void {
-    if (quantity < 1) {
-      return;
-    }
+    if (quantity < 1) return;
     const request: CartRequest = { productId, quantity };
     this.cartService.updateQuantity(request).subscribe({
       next: (data) => this.cart = data,
@@ -61,21 +61,18 @@ export class CartComponent implements OnInit {
       alert('Veuillez entrer une adresse de livraison.');
       return;
     }
-
-    const payload = {
-      shippingAddress: this.shippingAddress,
-      paymentMethod: 'PAY_ON_DELIVERY'
-    };
-
+    const payload = { shippingAddress: this.shippingAddress, paymentMethod: 'PAY_ON_DELIVERY' };
     this.cartService.checkoutCart(payload).subscribe({
       next: () => {
         this.isOpen = false;
         this.shippingAddress = '';
         this.loadCart();
-        alert('Commande validée avec succès ! Paiement à la livraison.');
+        alert('✅ Commande validée !');
+        this.router.navigate(['/profile/mes-commandes']); // ← redirection
       },
       error: (err) => {
         console.error('Erreur lors de la validation', err);
+        alert('❌ Erreur lors de la validation de la commande');
       }
     });
   }
