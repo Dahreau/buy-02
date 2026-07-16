@@ -1,4 +1,4 @@
-package com.example.cartservice.security;
+package com.example.orderservice.security;
 
 import java.util.List;
 
@@ -21,6 +21,7 @@ public class SecurityConfig {
         this.jwtUtil = jwtUtil;
     }
 
+    @SuppressWarnings("java:S4502")
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         JwtAuthFilter jwtAuthFilter = new JwtAuthFilter(jwtUtil);

@@ -2,170 +2,241 @@ import { Component, OnInit } from '@angular/core';
 import { ProductService } from './services/product.service';
 import { MediaService } from './services/media.service';
 import { AuthService } from './services/auth.service';
+import { OrderService } from './services/order.service';
 
 @Component({
   selector: 'app-seller-dashboard',
-  template: `
-    <div class="dashboard-header">
-      <div>
-        <h1 class="page-title">📊 Tableau de bord vendeur</h1>
-        <p class="page-subtitle">Gérez vos produits en toute simplicité</p>
-      </div>
-      <div class="vendor-badge">
-        <span class="dot"></span> En ligne
-      </div>
-    </div>
-
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon">📦</div>
-        <div>
-          <div class="stat-label">Total produits</div>
-          <div class="stat-value">{{ myProducts.length }}</div>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon">🔄</div>
-        <div>
-          <div class="stat-label">En attente</div>
-          <div class="stat-value">0</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="form-card">
-      <h4 class="form-title">✨ Ajouter un nouveau produit</h4>
-      <form (submit)="create($event)">
-        <div class="form-group full-width">
-          <label>Nom du produit</label>
-          <input class="form-control" placeholder="Ex: Sweat à capuche oversize" [(ngModel)]="name" name="name" />
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>💰 Prix (€)</label>
-            <input class="form-control" type="number" placeholder="0.00" [(ngModel)]="price" name="price" />
-          </div>
-          <div class="form-group">
-            <label>📊 Quantité</label>
-            <input class="form-control" type="number" placeholder="0" [(ngModel)]="quantity" name="quantity" />
-          </div>
-        </div>
-
-        <div class="form-group full-width">
-          <label>📝 Description</label>
-          <textarea class="form-control" rows="2" placeholder="Décrivez votre produit..." [(ngModel)]="description" name="description"></textarea>
-        </div>
-
-        <button class="btn-submit" type="submit">➕ Créer le produit</button>
-      </form>
-    </div>
-
-    <div class="products-header">
-      <h4>🛍️ Vos produits</h4>
-      <span class="products-count">{{ myProducts.length }} article(s)</span>
-    </div>
-
-    <div *ngIf="myProducts.length === 0" class="empty-state">
-      <div class="empty-icon">📭</div>
-      <p>Aucun produit pour le moment.<br />Commencez par en créer un !</p>
-    </div>
-
-    <div class="products-grid">
-      <div class="product-card" *ngFor="let p of myProducts">
-        <div class="product-image-wrapper">
-          <img *ngIf="p.images && p.images.length" [src]="p.images[0].imagePath" alt="{{p.name}}" />
-          <div *ngIf="!p.images || !p.images.length" class="no-image">🖼️</div>
-          <span class="stock-badge" 
-                [class.in-stock]="p.quantity > 5" 
-                [class.low-stock]="p.quantity <= 5 && p.quantity > 0" 
-                [class.out-of-stock]="p.quantity === 0">
-            {{ p.quantity === 0 ? 'Rupture' : (p.quantity <= 5 ? 'Stock faible' : 'En stock') }}
-          </span>
-        </div>
-
-        <div class="product-body">
-          <div class="product-header">
-            <h5 class="product-name">{{ p.name }}</h5>
-            <span class="product-price">{{ p.price | currency:'EUR' }}</span>
-          </div>
-          <p class="product-description">{{ p.description || 'Aucune description' }}</p>
-          <div class="product-meta">
-            <span class="product-id">🆔 {{ (p.id || p._id) | slice:0:8 }}...</span>
-            <span class="product-qty">📦 {{ p.quantity }} unités</span>
-          </div>
-          <div class="product-actions">
-            <button class="btn-edit" (click)="editProduct(p)">✏️ Modifier</button>
-            <button class="btn-delete" (click)="confirmDelete(p)">🗑️ Supprimer</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <hr class="divider" />
-    <app-media-manager (uploaded)="loadMyProducts()"></app-media-manager>
-  `,
-  styleUrls: ['../../ui.css']
+  templateUrl: './seller-dashboard.component.html',
 })
 export class SellerDashboardComponent implements OnInit {
-  name=''; price=0; quantity=0; description='';
+  // Produits
+  name = '';
+  price = 0;
+  quantity = 0;
+  description = '';
   myProducts: any[] = [];
   allProducts: any[] = [];
-  deleteProductId = '';
-  deleteError = '';
+  editingProductId: string | null = null;
   currentUserId: string | null = null;
-  constructor(private productService: ProductService, private media: MediaService, private auth: AuthService) {}
-  ngOnInit(): void { this.loadMyProducts(); }
+
+  // Images
+  selectedFiles: File[] = [];
+  imagePreviews: string[] = [];
+  existingImages: any[] = [];
+
+  // Commandes
+  orders: any[] = [];
+  stats: any = null;
+
+  constructor(
+    private readonly productService: ProductService,
+    private readonly media: MediaService,
+    private readonly auth: AuthService,
+    private readonly orderService: OrderService
+  ) {}
+
+  ngOnInit(): void {
+    this.loadMyProducts();
+    this.loadSellerOrders();
+    this.loadSellerStats();
+  }
+
+  // ==================== PRODUITS ====================
 
   loadMyProducts() {
     const userId = this.auth.getUserId();
     this.currentUserId = userId;
-    
-    this.productService.listAll().subscribe(data => {
+
+    this.productService.listAll().subscribe((data: any[]) => {
       this.allProducts = data;
       if (!userId) {
         this.myProducts = [];
         return;
       }
-      
-      this.myProducts = data.filter((p: any) => {
-        return p.userId === userId;
-      });
-      
+      this.myProducts = data.filter((p: any) => p.userId === userId);
       for (const p of this.myProducts) {
         const pid = p.id || p._id;
-        this.media.byProduct(pid).subscribe(meds => p.images = meds, _ => p.images = []);
+        this.media.byProduct(pid).subscribe(
+          (meds) => (p.images = meds),
+          () => (p.images = [])
+        );
       }
     });
   }
 
-  create(evt: Event) {
+  saveProduct(evt: Event) {
     evt.preventDefault();
     const userId = this.auth.getUserId();
-    const body = { name: this.name, price: this.price, quantity: this.quantity, description: this.description, userId: userId };
-    this.productService.create(body).subscribe({ next: () => { alert('Created'); this.loadMyProducts(); }, error: () => alert('Create failed') });
-  }
+    const body = {
+      name: this.name,
+      price: this.price,
+      quantity: this.quantity,
+      description: this.description,
+      userId: userId
+    };
 
-  confirmDelete(p: any) {
-    if (!confirm('Delete product "' + p.name + '"? This cannot be undone.')) return;
-    const id = p.id || p._id;
-    this.productService.delete(id).subscribe({ next: () => { alert('Deleted'); this.loadMyProducts(); }, error: () => alert('Delete failed') });
+    const request = this.editingProductId
+      ? this.productService.update(this.editingProductId, body)
+      : this.productService.create(body);
+
+    request.subscribe({
+      next: (product: any) => {
+        if (this.selectedFiles.length > 0) {
+          const uploads = this.selectedFiles.map((file) => {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('productId', product.id);
+            return this.media.upload(formData).toPromise();
+          });
+          Promise.all(uploads)
+            .then(() => {
+              alert(this.editingProductId ? 'Produit mis à jour avec images' : 'Produit créé avec images');
+              this.cancelEdit();
+              this.loadMyProducts();
+            })
+            .catch(() => {
+              alert('Produit sauvegardé mais erreur lors de l\'upload des images');
+              this.cancelEdit();
+              this.loadMyProducts();
+            });
+        } else {
+          alert(this.editingProductId ? 'Mis à jour' : 'Créé');
+          this.cancelEdit();
+          this.loadMyProducts();
+        }
+      },
+      error: () => alert(this.editingProductId ? 'Échec mise à jour' : 'Échec création')
+    });
   }
 
   editProduct(p: any) {
-    // placeholder: simple inline edit could be implemented; for now prompt to update name
-    const newName = prompt('Edit product name', p.name);
-    if (!newName || newName === p.name) return;
-    const id = p.id || p._id;
-    const body = { name: newName, price: p.price, quantity: p.quantity, description: p.description };
-    this.productService.update(id, body).subscribe({ next: () => { alert('Updated'); this.loadMyProducts(); }, error: () => alert('Update failed') });
+    this.editingProductId = p.id || p._id;
+    this.name = p.name || '';
+    this.price = Number(p.price || 0);
+    this.quantity = Number(p.quantity || 0);
+    this.description = p.description || '';
+    this.existingImages = p.images || [];
+    this.imagePreviews = [];
+    this.selectedFiles = [];
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  deleteSelected() {
-    this.deleteError = '';
-    if (!this.deleteProductId) { this.deleteError = 'Choose a product first'; return; }
-    if (!confirm('Delete selected product? This cannot be undone.')) return;
-    const id = this.deleteProductId;
-    this.productService.delete(id).subscribe({ next: () => { alert('Deleted'); this.deleteProductId = ''; this.loadMyProducts(); }, error: (e) => { this.deleteError = 'Delete failed'; } });
+  cancelEdit() {
+    this.editingProductId = null;
+    this.name = '';
+    this.price = 0;
+    this.quantity = 0;
+    this.description = '';
+    this.existingImages = [];
+    this.imagePreviews = [];
+    this.selectedFiles = [];
+  }
+
+  confirmDelete(p: any) {
+    if (!confirm('Supprimer "' + p.name + '" ?')) return;
+    const id = p.id || p._id;
+    this.productService.delete(id).subscribe({
+      next: () => {
+        alert('Supprimé');
+        this.loadMyProducts();
+      },
+      error: () => alert('Échec suppression')
+    });
+  }
+
+  // ==================== IMAGES ====================
+
+  onFileSelected(event: any) {
+    const files = event.target.files;
+    if (files) {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        this.selectedFiles.push(file);
+        const reader = new FileReader();
+        reader.onload = (e: any) => {
+          this.imagePreviews.push(e.target.result);
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+  }
+
+  removeTempImage(index: number) {
+    this.selectedFiles.splice(index, 1);
+    this.imagePreviews.splice(index, 1);
+  }
+
+  removeExistingImage(mediaId: string) {
+    this.existingImages = this.existingImages.filter((m) => m.id !== mediaId);
+    // Note : pour réellement supprimer du serveur, il faudrait appeler une API
+  }
+
+  // ==================== COMMANDES ====================
+
+  loadSellerOrders() {
+    this.orderService.getSellerOrders().subscribe({
+      next: (data: any) => {
+        this.orders = data.content || [];
+      },
+      error: (err) => console.error('Erreur chargement commandes:', err)
+    });
+  }
+
+  loadSellerStats() {
+    this.orderService.getSellerStats().subscribe({
+      next: (data) => {
+        this.stats = data;
+      },
+      error: (err) => console.error('Erreur chargement stats:', err)
+    });
+  }
+  // ==================== STATUTS ====================
+
+// Info pour l'affichage
+getStatusInfo(status: string) {
+    const map: any = {
+      'PENDING':   { label: 'En attente', icon: '🟡', color: '#f59e0b', next: 'PAID' },
+      'PAID':      { label: 'Payée', icon: '🟢', color: '#10b981', next: 'SHIPPED' },
+      'SHIPPED':   { label: 'Expédiée', icon: '📦', color: '#3b82f6', next: 'DELIVERED' },
+      'DELIVERED': { label: 'Livrée', icon: '✅', color: '#8b5cf6', next: null },
+      'CANCELLED': { label: 'Annulée', icon: '❌', color: '#ef4444', next: null }
+    };
+    return map[status] || { label: status, icon: '❓', color: '#6b7280', next: null };
+  }
+
+  // Retourne les statuts possibles pour le menu déroulant
+  getAvailableTransitions(currentStatus: string) {
+    const info = this.getStatusInfo(currentStatus);
+    // Si le statut est terminé (DELIVERED ou CANCELLED), on ne propose que lui-même
+    if (currentStatus === 'DELIVERED' || currentStatus === 'CANCELLED') {
+      return [currentStatus];
+    }
+    // Sinon on propose : le statut actuel + le suivant
+    const next = info.next;
+    return next ? [currentStatus, next] : [currentStatus];
+  }
+
+  // Passer au statut suivant (bouton "Suivant")
+  nextStatus(order: any) {
+    const info = this.getStatusInfo(order.status);
+    if (info.next) {
+      this.updateOrderStatus(order.id, info.next);
+    } else {
+      alert('Cette commande est déjà dans son état final.');
+    }
+  }
+
+  updateOrderStatus(orderId: string, newStatus: string) {
+    this.orderService.updateOrderStatus(orderId, newStatus).subscribe({
+      next: (updated) => {
+        const index = this.orders.findIndex((o) => o.id === updated.id);
+        if (index !== -1) this.orders[index] = updated;
+        this.loadSellerStats();
+      },
+      error: (err) => {
+        console.error('Erreur mise à jour statut:', err);
+        alert('Erreur lors du changement de statut');
+      }
+    });
   }
 }

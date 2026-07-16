@@ -1,0 +1,113 @@
+<div class="dashboard-header">
+  <div>
+    <h1 class="page-title">📋 Mes commandes</h1>
+    <p class="page-subtitle">Suivez toutes vos achats en un coup d'œil</p>
+  </div>
+</div>
+
+<!-- Statistiques -->
+<div class="stats-grid" *ngIf="userStats">
+  <div class="stat-card">
+    <div class="stat-icon">💰</div>
+    <div>
+      <div class="stat-label">Total dépensé</div>
+      <div class="stat-value">{{ userStats.totalSpent | currency:'EUR' }}</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">📦</div>
+    <div>
+      <div class="stat-label">Nombre de commandes</div>
+      <div class="stat-value">{{ userStats.totalOrders }}</div>
+    </div>
+  </div>
+  <div class="stat-card" *ngIf="userStats.topProducts?.length">
+    <div class="stat-icon">⭐</div>
+    <div>
+      <div class="stat-label">Produit favori</div>
+      <div class="stat-value">{{ userStats.topProducts[0]?.productName || '-' }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Filtres -->
+<div class="form-card" style="margin-bottom:20px;">
+  <div style="display:flex; gap:15px; flex-wrap:wrap;">
+    <div class="form-group" style="flex:2; min-width:200px;">
+      <label>🔍 Rechercher</label>
+      <input class="form-control" placeholder="Mot-clé..." [(ngModel)]="filterKeyword" (input)="onFilterChange()" />
+    </div>
+    <div class="form-group" style="flex:1; min-width:150px;">
+      <label>📊 Statut</label>
+      <select class="form-control" [(ngModel)]="filterStatus" (change)="onFilterChange()">
+        <option value="">Tous</option>
+        <option value="PENDING">En attente</option>
+        <option value="PAID">Payée</option>
+        <option value="SHIPPED">Expédiée</option>
+        <option value="DELIVERED">Livrée</option>
+        <option value="CANCELLED">Annulée</option>
+      </select>
+    </div>
+    <div class="form-group" style="flex:0 0 auto; display:flex; align-items:flex-end;">
+      <button class="btn-submit" type="button" (click)="loadOrders()">🔄 Rafraîchir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Chargement / Erreur / Vide -->
+<div *ngIf="loading" style="text-align:center; padding:40px;">⏳ Chargement...</div>
+<div *ngIf="error" class="alert alert-danger"
+  style="padding:15px; background:#f8d7da; color:#721c24; border-radius:8px;">{{ error }}</div>
+<div *ngIf="!loading && orders.length === 0" class="empty-state">
+  <div class="empty-icon">📭</div>
+  <p>Aucune commande trouvée.</p>
+</div>
+
+<!-- Grille des commandes -->
+<div class="products-grid" *ngIf="!loading && orders.length > 0">
+  <div class="product-card" *ngFor="let order of orders">
+    <div class="product-body">
+      <div class="product-header">
+        <h5 class="product-name" style="font-size:1rem; display:flex; align-items:center; flex-wrap:wrap; gap:6px;">
+          Commande #{{ order.id | slice:0:8 }}
+          <!-- ===== BADGE STATUT (appel à une méthode TypeScript) ===== -->
+          <span class="status-badge" [style.backgroundColor]="getStatusColor(order.status)"
+            style="padding: 4px 12px; border-radius: 30px; color: white; font-weight: 700; font-size: 0.7rem; white-space: nowrap; display: inline-block;">
+            {{ getStatusLabel(order.status) }}
+          </span>
+        </h5>
+        <span class="product-price">{{ order.totalAmount | currency:'EUR' }}</span>
+      </div>
+
+      <p class="product-description" style="font-size:0.85rem; margin-bottom:4px;">
+        📦 {{ order.items.length }} article(s)
+      </p>
+      <p class="product-description" style="font-size:0.8rem; color:#6c757d;">
+        🏠 {{ order.shippingAddress || 'Non spécifiée' }}<br />
+        📅 {{ order.createdAt | date:'dd/MM/yyyy HH:mm' }}
+      </p>
+
+      <div class="product-actions" style="margin-top:12px; gap:8px; display:flex; flex-wrap:wrap;">
+        <!-- Annuler -->
+        <button *ngIf="order.status === 'PENDING'" class="btn-delete" type="button" (click)="cancelOrder(order)"
+          style="padding:6px 14px; font-size:0.8rem;">
+          ❌ Annuler
+        </button>
+
+        <!-- Recommander -->
+        <button *ngIf="order.status === 'DELIVERED' || order.status === 'CANCELLED'" class="btn-edit" type="button"
+          (click)="redoOrder(order)" style="padding:6px 14px; font-size:0.8rem;">
+          🔄 Recommander
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Pagination -->
+<div *ngIf="totalPages > 1" style="display:flex; justify-content:center; gap:10px; margin-top:30px; flex-wrap:wrap;">
+  <button class="btn-edit" (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 0">⬅️ Précédent</button>
+  <span style="align-self:center;">Page {{ currentPage + 1 }} / {{ totalPages }}</span>
+  <button class="btn-edit" (click)="goToPage(currentPage + 1)" [disabled]="currentPage >= totalPages - 1">Suivant
+    ➡️</button>
+</div>

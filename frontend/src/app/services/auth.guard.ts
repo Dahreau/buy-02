@@ -1,13 +1,25 @@
-import { Injectable } from '@angular/core';
-import { CanActivate, Router } from '@angular/router';
+import { inject } from '@angular/core';
+import { Router } from '@angular/router';
 import { AuthService } from './auth.service';
 
-@Injectable({ providedIn: 'root' })
-export class AuthGuard implements CanActivate {
-  constructor(private auth: AuthService, private router: Router) {}
-  canActivate(): boolean {
-    if (this.auth.isSeller()) return true;
-    this.router.navigate(['/login']);
+// Guard pour toute personne connectée (client ou vendeur)
+export const authGuard = () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  if (auth.getToken()) return true;
+  router.navigate(['/login']);
+  return false;
+};
+
+// Guard pour les vendeurs uniquement
+export const sellerGuard = () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  if (!auth.getToken()) {
+    router.navigate(['/login']);
     return false;
   }
-}
+  if (auth.isSeller()) return true;
+  router.navigate(['/']);
+  return false;
+};

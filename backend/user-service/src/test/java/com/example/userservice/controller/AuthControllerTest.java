@@ -27,8 +27,9 @@ class AuthControllerTest {
     @Autowired
     private UserRepository userRepository;
 
+    @SuppressWarnings("unused")
     @BeforeEach
-    public void cleanup() {
+    void cleanup() {
         userRepository.deleteAll();
     }
 

@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -34,50 +35,33 @@ import lombok.RequiredArgsConstructor;
 
 public class OrderController {
 
-    @org.springframework.beans.factory.annotation.Value("${jwt.secret}")
-    private String jwtSecret;
-
     private final OrderService orderService;
-    private static final String SELLER = "SELLER";
     private static final String ERRORS = "Accès réservé aux vendeurs";
 
-    private String getClaim(String token, String claim) {
-        try {
-            String jwt = token.startsWith("Bearer ") ? token.substring(7) : token;
-            io.jsonwebtoken.Claims claims = io.jsonwebtoken.Jwts.parserBuilder()
-                    .setSigningKey(io.jsonwebtoken.security.Keys.hmacShaKeyFor(jwtSecret.getBytes(java.nio.charset.StandardCharsets.UTF_8)))
-                    .build()
-                    .parseClaimsJws(jwt)
-                    .getBody();
+    private String getAuthenticatedUserId() {
+        return SecurityContextHolder.getContext().getAuthentication().getName();
+    }
 
-            if ("id".equals(claim) || "sub".equals(claim)) {
-                return claims.getSubject();
-            }
-            return claims.get(claim, String.class);
-        } catch (io.jsonwebtoken.JwtException | IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token invalide", e);
-        }
+    private boolean isSeller() {
+        return SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_SELLER"));
     }
 
     @GetMapping("/stats/user")
-    public UserStatsDTO getMyStats(@RequestHeader("Authorization") String token) {
-        String userId = getClaim(token, "id");
-        return orderService.getUserStats(userId);
+    public UserStatsDTO getMyStats() {
+        return orderService.getUserStats(getAuthenticatedUserId());
     }
 
     @GetMapping("/stats/seller")
-    public SellerStatsDTO getSellerStats(@RequestHeader("Authorization") String token) {
-        String role = getClaim(token, "role");
-        if (!SELLER.equals(role)) {
+    public SellerStatsDTO getSellerStats() {
+        if (!isSeller()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, ERRORS);
         }
-        String sellerId = getClaim(token, "id");
-        return orderService.getSellerStats(sellerId);
+        return orderService.getSellerStats(getAuthenticatedUserId());
     }
 
     @GetMapping
     public Page<Order> getMyOrders(
-            @RequestHeader("Authorization") String token,
             @RequestParam(required = false) OrderStatus status,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end,
@@ -89,13 +73,11 @@ public class OrderController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La date de début doit être antérieure à la date de fin");
         }
 
-        String userId = getClaim(token, "id");
-        return orderService.searchOrders(userId, null, status, start, end, keyword, PageRequest.of(page, size));
+        return orderService.searchOrders(getAuthenticatedUserId(), null, status, start, end, keyword, PageRequest.of(page, size));
     }
 
     @GetMapping("/seller")
     public Page<Order> getSellerOrders(
-            @RequestHeader("Authorization") String token,
             @RequestParam(required = false) OrderStatus status,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end,
@@ -107,48 +89,39 @@ public class OrderController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La date de début doit être antérieure à la date de fin");
         }
 
-        String role = getClaim(token, "role");
-        if (!SELLER.equals(role)) {
+        if (!isSeller()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, ERRORS);
         }
-        String sellerId = getClaim(token, "id");
-        return orderService.searchOrders(null, sellerId, status, start, end, keyword, PageRequest.of(page, size));
+        return orderService.searchOrders(null, getAuthenticatedUserId(), status, start, end, keyword, PageRequest.of(page, size));
     }
 
     @PostMapping("/{id}/cancel")
-    public Order cancelOrder(@RequestHeader("Authorization") String token, @PathVariable String id) {
-        String userId = getClaim(token, "id");
-        return orderService.cancelOrder(userId, id);
+    public Order cancelOrder(@PathVariable String id) {
+        return orderService.cancelOrder(getAuthenticatedUserId(), id);
     }
 
     @PutMapping("/{id}/status")
     public Order updateOrderStatus(
-            @RequestHeader("Authorization") String token,
             @PathVariable String id,
             @RequestParam OrderStatus status) {
-        String role = getClaim(token, "role");
-        if (!SELLER.equals(role)) {
+        if (!isSeller()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, ERRORS);
         }
-        String sellerId = getClaim(token, "id");
-        return orderService.updateOrderStatus(sellerId, id, status);
+        return orderService.updateOrderStatus(getAuthenticatedUserId(), id, status);
     }
 
     @DeleteMapping("/{id}")
-    public void deleteOrder(@RequestHeader("Authorization") String token, @PathVariable String id) {
-        String userId = getClaim(token, "id");
-        orderService.deleteOrder(userId, id);
+    public void deleteOrder(@PathVariable String id) {
+        orderService.deleteOrder(getAuthenticatedUserId(), id);
     }
 
     @PostMapping("/{id}/redo")
     public Order redoOrder(@RequestHeader("Authorization") String token, @PathVariable String id) {
-        String userId = getClaim(token, "id");
-        return orderService.redoOrder(userId, id, token);
+        return orderService.redoOrder(getAuthenticatedUserId(), id, token);
     }
 
     @PostMapping("/checkout")
     public Order checkout(@RequestHeader("Authorization") String token, @RequestBody @Valid CheckoutRequest request) {
-        String userId = getClaim(token, "id");
-        return orderService.checkout(userId, request, token);
+        return orderService.checkout(getAuthenticatedUserId(), request, token);
     }
 }

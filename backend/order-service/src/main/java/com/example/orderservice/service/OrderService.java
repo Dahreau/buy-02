@@ -309,7 +309,7 @@ public class OrderService {
     private CartDTO fetchCart(String token) {
         return webClientBuilder.build()
                 .get()
-                .uri("http://cart-service/api/carts")
+                .uri("http://cart-service:8085/api/carts")
                 .header("Authorization", token)
                 .retrieve()
                 .bodyToMono(CartDTO.class)
@@ -319,7 +319,7 @@ public class OrderService {
     private void clearCart(String token) {
         webClientBuilder.build()
                 .delete()
-                .uri("http://cart-service/api/carts/clear")
+                .uri("http://cart-service:8085/api/carts/clear")
                 .header("Authorization", token)
                 .retrieve()
                 .toBodilessEntity()
