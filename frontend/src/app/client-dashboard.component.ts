@@ -66,11 +66,6 @@ export class ClientDashboardComponent implements OnInit {
     this.loadOrders();
   }
 
-  goToPage(page: number): void {
-    if (page < 0 || page >= this.totalPages) return;
-    this.currentPage = page;
-    this.loadOrders();
-  }
 
   cancelOrder(order: Order): void {
     if (!confirm(`Annuler la commande #${order.id} ?`)) return;

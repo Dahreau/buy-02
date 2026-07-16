@@ -4,7 +4,7 @@ import { Observable } from 'rxjs'; // ← AJOUTER CETTE LIGNE
 
 @Injectable({ providedIn: 'root' })
 export class MediaService {
-  constructor(private http: HttpClient) {}
+  constructor(private readonly http: HttpClient) {}
 
   upload(formData: FormData): Observable<any> {
     return this.http.post('/api/media/upload', formData);

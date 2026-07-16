@@ -19,6 +19,9 @@ export class AppComponent {
   toggleCart(): void {
     this.cartComponent?.toggleCart();
   }
+  loadCart(): void {
+    this.cartComponent?.loadCart();
+  }
 
   logout(): void {
     this.auth.logout();

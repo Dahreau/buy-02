@@ -21,7 +21,7 @@ import { AuthService } from './services/auth.service';
 })
 export class RegisterComponent {
   name=''; email=''; password=''; role='CLIENT'; error='';
-  constructor(private auth: AuthService, private router: Router) {}
+  constructor(private readonly auth: AuthService, private readonly router: Router) {}
 
   register(evt: Event) {
     evt.preventDefault();

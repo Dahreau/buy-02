@@ -1,11 +1,12 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { ProductService } from './services/product.service';
 import { MediaService } from './services/media.service';
+import { AppComponent } from './app.component';
 import { CartService } from './services/cart.service';
 
 @Component({
   selector: 'app-product-list',
-  styleUrls: ['../../ui.css'],
+  styleUrls: ['../styles/ui.css'],
   template: `
       
     <!-- ===== EN-TÊTE PRODUITS ===== -->
@@ -76,6 +77,7 @@ import { CartService } from './services/cart.service';
   `
 })
 export class ProductListComponent implements OnInit {
+  @ViewChild(AppComponent) appComponent!: AppComponent;
   products: any[] = [];
   filteredProducts: any[] = [];
   quantities: { [productId: string]: number } = {};
@@ -88,6 +90,7 @@ export class ProductListComponent implements OnInit {
     private readonly cartService: CartService
   ) {}
 
+  
   ngOnInit() {
     this.productService.listAll().subscribe(data => {
       this.products = data;
@@ -137,6 +140,7 @@ export class ProductListComponent implements OnInit {
       error: err => console.error(err)
     });
   }
+  
 
   fetchImages(productList: any[]) {
     for (const p of productList) {
@@ -147,31 +151,7 @@ export class ProductListComponent implements OnInit {
       });
     }
   }
-
-  loadCart() {
-  this.cartService.getCart().subscribe({
-    next: (data) => {
-      this.cart = data;
-      console.log('Panier rechargé :', data); // Vérifie dans la console
-    },
-    error: (err) => console.error(err)
-  });
-}
-
-  toggleCart() {
-    this.isOpen = !this.isOpen;
-    if (this.isOpen) {
-      this.loadCart();
-    }
-  }
-
-  getTotalQuantity(): number {
-    if (!this.cart || !this.cart.items) {
-      return 0;
-    }
-    return this.cart.items.reduce((acc, item) => acc + item.quantity, 0);
-  }
-
+  
   addToCart(p: any) {
     const productId = p.id || p._id;
     const qty = this.getQty(p);
@@ -179,43 +159,13 @@ export class ProductListComponent implements OnInit {
       next: () => {
         alert(`✅ ${qty} × "${p.name}" ajouté au panier !`);
         this.quantities[productId] = 1;
-        this.loadCart(); // recharge le panier
+        // 🔥 Recharge le panier via AppComponent
+        this.appComponent.loadCart();
       },
       error: (e) => {
         console.error(e);
         alert('❌ Échec de l\'ajout au panier');
       }
-    });
-  }
-
-  updateQuantity(productId: string, quantity: number) {
-    if (quantity < 1) return;
-    this.cartService.updateQuantity({ productId, quantity }).subscribe({
-      next: (data) => {
-        this.cart = data;
-        this.loadCart(); // recharge pour synchro
-      },
-      error: (err) => console.error(err)
-    });
-  }
-
-  removeItem(productId: string) {
-    this.cartService.removeFromCart(productId).subscribe({
-      next: (data) => {
-        this.cart = data;
-        this.loadCart();
-      },
-      error: (err) => console.error(err)
-    });
-  }
-
-  clearCart() {
-    this.cartService.clearCart().subscribe({
-      next: () => {
-        this.cart = null;
-        this.loadCart();
-      },
-      error: (err) => console.error(err)
     });
   }
 

@@ -21,7 +21,9 @@
           <button (click)="updateQuantity(item.productId, item.quantity - 1)">-</button>
           <span>{{ item.quantity }}</span>
           <button (click)="updateQuantity(item.productId, item.quantity + 1)">+</button>
-          <button class="remove-btn" (click)="removeItem(item.productId)">Supprimer</button>
+          <button class="remove-btn" (click)="removeItem(item.productId)">
+            🗑️
+          </button>
         </div>
       </div>
     </div>
