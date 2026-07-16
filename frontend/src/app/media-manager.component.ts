@@ -35,7 +35,7 @@ export class MediaManagerComponent {
   products: any[] = [];
   constructor(private readonly http: HttpClient, private readonly productService: ProductService, private readonly auth: AuthService) {}
 
-  ngOnInit(): void {
+  OnInit(): void {
     // load products so the user can pick one by name (and we show the id in the option)
     this.productService.listAll().subscribe({ 
       next: (data: any[]) => {
