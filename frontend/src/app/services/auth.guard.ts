@@ -23,3 +23,20 @@ export const sellerGuard = () => {
   router.navigate(['/']);
   return false;
 };
+
+export const clientGuard = () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  // Vérifier que l'utilisateur est connecté
+  if (!auth.getToken()) {
+    router.navigate(['/login']);
+    return false;
+  }
+  // Si c'est un vendeur, on le redirige vers le dashboard vendeur (ou l'accueil)
+  if (auth.isSeller()) {
+    router.navigate(['/']); 
+    return false;
+  }
+  // Sinon (client), on autorise l'accès
+  return true;
+};

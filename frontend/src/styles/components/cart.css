@@ -67,7 +67,7 @@
   border-radius: 40px;
   font-size: 1.1rem;
   font-weight: 700;
-  color: #ffffff;
+  color: #0f0d0d;
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;
@@ -228,7 +228,7 @@
 }
 .remove-btn:hover {
   background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
+  color: #b80b0b;
   transform: scale(1.15) rotate(-6deg);
 }
 .remove-btn:active {
@@ -322,7 +322,9 @@
   background: linear-gradient(135deg, #7c3aed, #ec4899);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  background-clip: text;
   font-size: 1.3rem;
+  color: #7c3aed;
 }
 
 /* ===== BOUTON VIDER ===== */

@@ -37,7 +37,7 @@
 }
 
 .products-count {
-  color: #94a3b8;
+  color: #256ed4;
   font-size: 0.85rem;
   background: #f1f5f9;
   padding: 0.2rem 1rem;
@@ -254,7 +254,7 @@
 
 .btn-add-to-cart {
   flex: 1;
-  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+  background: linear-gradient(135deg, #8b5cf6, #461b8b);
   color: white;
   border: none;
   padding: 0.5rem 1rem;

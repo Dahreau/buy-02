@@ -3,6 +3,7 @@ import { ProductService } from './services/product.service';
 import { MediaService } from './services/media.service';
 import { AuthService } from './services/auth.service';
 import { OrderService } from './services/order.service';
+import { firstValueFrom } from 'rxjs/internal/firstValueFrom';
 
 @Component({
   selector: 'app-seller-dashboard',
@@ -53,14 +54,13 @@ export class SellerDashboardComponent implements OnInit {
         this.myProducts = [];
         return;
       }
-      this.myProducts = data.filter((p: any) => p.userId === userId);
-      for (const p of this.myProducts) {
-        const pid = p.id || p._id;
-        this.media.byProduct(pid).subscribe(
-          (meds) => (p.images = meds),
-          () => (p.images = [])
-        );
-      }
+        for (const p of this.myProducts) {
+      const pid = p.id || p._id;
+      this.media.byProduct(pid).subscribe({
+        next: (meds) => (p.images = meds),
+        error: () => (p.images = [])
+      });
+    }
     });
   }
 
@@ -86,7 +86,7 @@ export class SellerDashboardComponent implements OnInit {
             const formData = new FormData();
             formData.append('file', file);
             formData.append('productId', product.id);
-            return this.media.upload(formData).toPromise();
+            return firstValueFrom(this.media.upload(formData));
           });
           Promise.all(uploads)
             .then(() => {
