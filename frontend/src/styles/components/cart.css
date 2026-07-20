@@ -227,7 +227,7 @@
   height: 32px;
 }
 .remove-btn:hover {
-  background: rgba(239, 68, 68, 0.1);
+  background: #fee2e2;
   color: #b91c1c;
   transform: scale(1.15) rotate(-6deg);
 }
@@ -319,10 +319,6 @@
   justify-content: space-between;
 }
 .cart-footer h4 span {
-  background: linear-gradient(135deg, #7c3aed, #ec4899);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
   font-size: 1.3rem;
   color: #6d28d9;
 }
