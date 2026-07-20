@@ -254,8 +254,8 @@
 
 .btn-add-to-cart {
   flex: 1;
-  background: linear-gradient(135deg, #8b5cf6, #461b8b);
-  color: white;
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+  color: #dbcd0b;
   border: none;
   padding: 0.5rem 1rem;
   border-radius: 30px;

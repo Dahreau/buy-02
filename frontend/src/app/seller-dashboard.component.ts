@@ -149,8 +149,7 @@ export class SellerDashboardComponent implements OnInit {
   onFileSelected(event: any) {
     const files = event.target.files;
     if (files) {
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
+      for (const file of files) {
         this.selectedFiles.push(file);
         const reader = new FileReader();
         reader.onload = (e: any) => {
