@@ -28,7 +28,7 @@
 <!-- ==================== FORMULAIRE PRODUIT ==================== -->
 <div class="form-card">
   <h4 class="form-title">✨ {{ editingProductId ? 'Modifier le produit' : 'Ajouter un nouveau produit' }}</h4>
-  
+
   <form (submit)="saveProduct($event)">
     <div *ngIf="editingProductId" class="alert alert-info mb-3">
       Mode édition actif sur le produit sélectionné.
@@ -37,45 +37,50 @@
 
     <div class="form-group full-width">
       <label for="productName">Nom du produit</label>
-      <input id="productName" class="form-control" placeholder="Ex: Sweat à capuche oversize" [(ngModel)]="name" name="name" />
+      <input id="productName" class="form-control" placeholder="Ex: Sweat à capuche oversize" [(ngModel)]="name"
+        name="name" />
     </div>
 
     <div class="form-row">
       <div class="form-group">
         <label for="productPrice">💰 Prix (€)</label>
-        <input id="productPrice" class="form-control" type="number" placeholder="0.00" [(ngModel)]="price" name="price" />
+        <input id="productPrice" class="form-control" type="number" placeholder="0.00" [(ngModel)]="price"
+          name="price" />
       </div>
       <div class="form-group">
         <label for="productQuantity">📊 Quantité</label>
-        <input id="productQuantity" class="form-control" type="number" placeholder="0" [(ngModel)]="quantity" name="quantity" />
+        <input id="productQuantity" class="form-control" type="number" placeholder="0" [(ngModel)]="quantity"
+          name="quantity" />
       </div>
     </div>
 
     <div class="form-group full-width">
       <label for="productDescription">📝 Description</label>
-      <textarea id="productDescription" class="form-control" rows="2" placeholder="Décrivez votre produit..." [(ngModel)]="description" name="description"></textarea>
+      <textarea id="productDescription" class="form-control" rows="2" placeholder="Décrivez votre produit..."
+        [(ngModel)]="description" name="description"></textarea>
     </div>
 
     <!-- Upload images -->
     <div class="form-group full-width">
       <label for="productImages">🖼️ Images du produit</label>
-      <input id="productImages" type="file" multiple accept="image/*" (change)="onFileSelected($event)" class="form-control" />
+      <input id="productImages" type="file" multiple accept="image/*" (change)="onFileSelected($event)"
+        class="form-control" />
 
       <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;">
         <!-- Images existantes -->
         <div *ngFor="let img of existingImages"
-             style="position: relative; width: 80px; height: 80px; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0;">
+          style="position: relative; width: 80px; height: 80px; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0;">
           <img [src]="img.imagePath" alt="Produit : {{ name }}" style="width:100%; height:100%; object-fit:cover;" />
           <button type="button" (click)="removeExistingImage(img.id)"
-                  style="position:absolute; top:-5px; right:-5px; background:red; color:gray; border:none; border-radius:50%; width:20px; height:20px; cursor:pointer; font-size:12px;">×</button>
+            style="position:absolute; top:-5px; right:-5px; background:#dc2626; color:#ffffff; border:none; border-radius:50%; width:20px; height:20px; cursor:pointer; font-size:12px;">×</button>
         </div>
 
         <!-- Aperçus nouvelles images -->
         <div *ngFor="let preview of imagePreviews; let i = index"
-             style="position: relative; width: 80px; height: 80px; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0;">
+          style="position: relative; width: 80px; height: 80px; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0;">
           <img [src]="preview" alt="Aperçu" style="width:100%; height:100%; object-fit:cover;" />
           <button type="button" (click)="removeTempImage(i)"
-                  style="position:absolute; top:-5px; right:-5px; background:red; color:gray; border:none; border-radius:50%; width:20px; height:20px; cursor:pointer; font-size:12px;">×</button>
+            style="position:absolute; top:-5px; right:-5px; background:#dc2626; color:#ffffff; border:none; border-radius:50%; width:20px; height:20px; cursor:pointer; font-size:12px;">×</button>
         </div>
       </div>
     </div>
@@ -192,11 +197,11 @@
             {{ getStatusInfo(order.status).icon }} {{ getStatusInfo(order.status).label }}
           </span>
 
-          <label for="status-{{ order.id }}" class="visually-hidden">Changer le statut de la commande {{ order.id }}</label>
-          <select id="status-{{ order.id }}"
-                  class="form-control status-select"
-                  style="padding: 0.3rem 0.8rem; border-radius: 30px; font-size: 0.75rem; border: 1.5px solid #e2e8f0; background: white; cursor: pointer;"
-                  (change)="updateOrderStatus(order.id, $event.target.value)">
+          <label for="status-{{ order.id }}" class="visually-hidden">Changer le statut de la commande {{ order.id
+            }}</label>
+          <select id="status-{{ order.id }}" class="form-control status-select"
+            style="padding: 0.3rem 0.8rem; border-radius: 30px; font-size: 0.75rem; border: 1.5px solid #e2e8f0; background: white; cursor: pointer;"
+            (change)="updateOrderStatus(order.id, $any($event.target).value)">
             <option *ngFor="let s of getAvailableTransitions(order.status)" [value]="s" [selected]="s === order.status">
               {{ getStatusInfo(s).icon }} {{ getStatusInfo(s).label }}
             </option>
@@ -205,7 +210,7 @@
 
         <!-- Bouton "Suivant" (uniquement si un prochain statut existe) -->
         <button *ngIf="getStatusInfo(order.status).next" class="btn-next" type="button" (click)="nextStatus(order)"
-          style="padding: 0.3rem 1rem; border-radius: 30px; border: none; background: #8b5cf6; color: gray; font-weight: 700; font-size: 0.75rem; cursor: pointer; transition: 0.2s;">
+          style="padding: 0.3rem 1rem; border-radius: 30px; border: none; background: #7c3aed; color: #ffffff; font-weight: 700; font-size: 0.75rem; cursor: pointer; transition: 0.2s;">
           ⏩ Suivant
         </button>
 

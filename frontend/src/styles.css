@@ -20,4 +20,4 @@ body { font-family: 'Poppins', system-ui, -apple-system, 'Segoe UI', Roboto, 'He
 .card-img-top img{ display:block; margin:0 auto; }
 .btn-primary, .btn-success { border-radius:8px; }
 .form-control, .form-select { border-radius:8px; }
-.placeholder-img { background: linear-gradient(90deg,#797777,#b7cae4); height:160px; display:flex; align-items:center; justify-content:center; color:#aaa; }
+.placeholder-img { background:#e2e8f0; height:160px; display:flex; align-items:center; justify-content:center; color:#475569; }
