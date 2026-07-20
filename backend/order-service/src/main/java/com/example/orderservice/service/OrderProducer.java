@@ -17,9 +17,11 @@ public class OrderProducer {
 
     public void sendStockUpdate(String productId, Integer quantity) {
         log.info("Envoi mise à jour stock pour le produit {} : -{}", productId, quantity);
+        String internalToken = System.getenv("INTERNAL_TOKEN");
         webClientBuilder.build()
                 .post()
                 .uri("http://product-service:8082/api/products/stock-update")
+                .header("X-Internal-Token", internalToken)
                 .bodyValue(new StockUpdateEvent(productId, quantity))
                 .retrieve()
                 .toBodilessEntity()

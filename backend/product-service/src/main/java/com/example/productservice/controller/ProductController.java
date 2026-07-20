@@ -92,6 +92,31 @@ public class ProductController {
         return ResponseEntity.noContent().build();
     }
 
+    // Internal endpoint used by order-service to decrement stock once an order is paid.
+    // Protected by the same internal-token convention as the /images endpoint below.
+    @PostMapping("/stock-update")
+    public ResponseEntity<Object> updateStock(@RequestBody Map<String, Object> body,
+            @RequestHeader(value = "X-Internal-Token", required = false) String token) {
+        String internalToken = System.getenv("INTERNAL_TOKEN");
+        if (internalToken == null || !internalToken.equals(token)) {
+            return ResponseEntity.status(403).body(Map.of(ERROR_KEY, "Forbidden"));
+        }
+        Object productIdObj = body.get("productId");
+        Object quantityObj = body.get("quantity");
+        if (!(productIdObj instanceof String productId) || !(quantityObj instanceof Number quantityNum)) {
+            return ResponseEntity.badRequest().body(Map.of(ERROR_KEY, "productId et quantity requis"));
+        }
+        var opt = repo.findById(productId);
+        if (opt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        Product product = opt.get();
+        int current = product.getQuantity() != null ? product.getQuantity() : 0;
+        product.setQuantity(Math.max(0, current - quantityNum.intValue()));
+        repo.save(product);
+        return ResponseEntity.ok(product);
+    }
+
     // Internal endpoint to append an image/media id to a product's imageIds list.
     // This endpoint expects an internal token in the X-Internal-Token header and is
     // intended for trusted services (e.g., media-service) to keep data in sync.

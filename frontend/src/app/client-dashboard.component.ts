@@ -91,6 +91,18 @@ export class ClientDashboardComponent implements OnInit {
     });
   }
 
+  deleteOrder(order: Order): void {
+    if (!confirm(`Supprimer définitivement la commande #${order.id} de votre historique ?`)) return;
+    this.orderService.deleteOrder(order.id).subscribe({
+      next: () => {
+        alert('Commande supprimée.');
+        this.loadOrders();
+        this.loadStats();
+      },
+      error: () => alert('Erreur lors de la suppression.')
+    });
+  }
+
   // ==================== AFFICHAGE DES STATUTS ====================
 getStatusLabel(status: string): string {
   const map: { [key: string]: string } = {

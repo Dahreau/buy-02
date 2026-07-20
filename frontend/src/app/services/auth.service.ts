@@ -39,11 +39,20 @@ export class AuthService {
     if (!token) return null;
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
-      console.log('Token payload:', payload); 
+      console.log('Token payload:', payload);
       return payload.userId || payload.sub || null;
-    } catch(e) { 
+    } catch(e) {
       console.error('Token error:', e);
-      return null; 
+      return null;
     }
+  }
+
+  getUserName(): string | null {
+    const token = this.getToken();
+    if (!token) return null;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload?.name || null;
+    } catch { return null; }
   }
 }

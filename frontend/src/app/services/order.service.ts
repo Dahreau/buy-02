@@ -41,6 +41,10 @@ export class OrderService {
     return this.http.post<Order>(`${this.baseUrl}/${orderId}/redo`, {});
   }
 
+  deleteOrder(orderId: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${orderId}`);
+  }
+
   // ==================== VENDEUR ====================
 
   getSellerOrders(params?: {

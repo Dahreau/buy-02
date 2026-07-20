@@ -24,19 +24,15 @@ export const sellerGuard = () => {
   return false;
 };
 
+// Guard pour l'espace "Mes commandes" : accessible à tout utilisateur connecté,
+// vendeur ou non. Un vendeur peut aussi acheter des produits (le panier lui est
+// accessible), il doit donc pouvoir consulter l'historique de ses propres achats.
 export const clientGuard = () => {
   const auth = inject(AuthService);
   const router = inject(Router);
-  // Vérifier que l'utilisateur est connecté
   if (!auth.getToken()) {
     router.navigate(['/login']);
     return false;
   }
-  // Si c'est un vendeur, on le redirige vers le dashboard vendeur (ou l'accueil)
-  if (auth.isSeller()) {
-    router.navigate(['/']); 
-    return false;
-  }
-  // Sinon (client), on autorise l'accès
   return true;
 };

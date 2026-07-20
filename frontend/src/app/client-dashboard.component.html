@@ -104,6 +104,12 @@
           (click)="redoOrder(order)" style="padding:6px 14px; font-size:0.8rem;">
           🔄 Recommander
         </button>
+
+        <!-- Supprimer (uniquement commandes terminées, cohérent avec la règle backend) -->
+        <button *ngIf="order.status === 'DELIVERED' || order.status === 'CANCELLED'" class="btn-delete" type="button"
+          (click)="deleteOrder(order)" style="padding:6px 14px; font-size:0.8rem;">
+          🗑️ Supprimer
+        </button>
       </div>
     </div>
   </div>

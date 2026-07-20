@@ -231,9 +231,14 @@ public class OrderService {
         }
 
         if (order.getStatus() == OrderStatus.PENDING && newStatus == OrderStatus.PAID) {
-            order.getItems().forEach(item
-                    -> orderProducer.sendStockUpdate(item.getProductId(), item.getQuantity())
-            );
+            order.getItems().forEach(item -> {
+                try {
+                    orderProducer.sendStockUpdate(item.getProductId(), item.getQuantity());
+                } catch (Exception e) {
+                    log.warn("Échec de la mise à jour du stock pour le produit {} (commande {})",
+                            item.getProductId(), orderId, e);
+                }
+            });
         }
 
         order.setStatus(newStatus);

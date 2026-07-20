@@ -30,4 +30,8 @@ export class AppComponent {
   isSeller(): boolean {
     return this.auth.isSeller();
   }
+
+  getUserName(): string | null {
+    return this.auth.getUserName();
+  }
 }
