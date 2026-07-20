@@ -84,9 +84,13 @@
         <span class="product-price">{{ order.totalAmount | currency:'EUR' }}</span>
       </div>
 
-      <p class="product-description" style="font-size:0.85rem; margin-bottom:4px;">
-        📦 {{ order.items.length }} article(s)
-      </p>
+      <div class="product-description" style="font-size:0.82rem; margin-bottom:4px;">
+        <div *ngFor="let item of order.items"
+          style="display:flex; justify-content:space-between; gap:8px; padding:2px 0;">
+          <span>📦 {{ item.productName }} × {{ item.quantity }}</span>
+          <span style="color:#6c757d;">{{ item.priceAtPurchase * item.quantity | currency:'EUR' }}</span>
+        </div>
+      </div>
       <p class="product-description" style="font-size:0.8rem; color:#6c757d;">
         🏠 {{ order.shippingAddress || 'Non spécifiée' }}<br />
         📅 {{ order.createdAt | date:'dd/MM/yyyy HH:mm' }}
@@ -105,7 +109,7 @@
           🔄 Recommander
         </button>
 
-        <!-- Supprimer (uniquement commandes terminées, cohérent avec la règle backend) -->
+        <!-- Delete: only for finished orders, matches the backend rule -->
         <button *ngIf="order.status === 'DELIVERED' || order.status === 'CANCELLED'" class="btn-delete" type="button"
           (click)="deleteOrder(order)" style="padding:6px 14px; font-size:0.8rem;">
           🗑️ Supprimer

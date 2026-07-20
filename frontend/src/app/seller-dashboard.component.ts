@@ -185,6 +185,12 @@ export class SellerDashboardComponent implements OnInit {
 
   // ==================== COMMANDES ====================
 
+  // Only this seller's items in the order (an order can span multiple sellers).
+  getSellerItems(order: any): any[] {
+    if (!order?.items) return [];
+    return order.items.filter((i: any) => i.sellerId === this.currentUserId);
+  }
+
   loadSellerOrders() {
     this.orderService.getSellerOrders().subscribe({
       next: (data: any) => {

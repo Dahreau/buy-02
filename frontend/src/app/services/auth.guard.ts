@@ -24,9 +24,8 @@ export const sellerGuard = () => {
   return false;
 };
 
-// Guard pour l'espace "Mes commandes" : accessible à tout utilisateur connecté,
-// vendeur ou non. Un vendeur peut aussi acheter des produits (le panier lui est
-// accessible), il doit donc pouvoir consulter l'historique de ses propres achats.
+// "My orders" is open to any authenticated user. Sellers can buy too (cart is
+// available to them), so they need access to their own order history as well.
 export const clientGuard = () => {
   const auth = inject(AuthService);
   const router = inject(Router);

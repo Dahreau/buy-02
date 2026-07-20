@@ -39,6 +39,11 @@ public class CartService {
             throw new IllegalArgumentException("Produit non trouvé");
         }
 
+        if (userId.equals(product.getUserId())) {
+            log.warn("Le vendeur {} a tenté d'acheter son propre produit {}", userId, product.getId());
+            throw new IllegalArgumentException("Vous ne pouvez pas acheter votre propre produit");
+        }
+
         Cart cart = getCartByUserId(userId);
 
         Optional<CartItem> existingItem = cart.getItems().stream()

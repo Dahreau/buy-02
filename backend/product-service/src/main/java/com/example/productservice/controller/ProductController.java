@@ -66,6 +66,7 @@ public class ProductController {
         p.setQuantity(dto.getQuantity());
         p.setImageIds(dto.getImageIds());
         p.setUserId(userId);
+        p.setSellerName(getAuthenticatedName());
         Product saved = repo.save(p);
         return ResponseEntity.ok(saved);
     }
@@ -80,6 +81,9 @@ public class ProductController {
         existing.setPrice(dto.getPrice());
         existing.setQuantity(dto.getQuantity());
         existing.setImageIds(dto.getImageIds());
+        if (existing.getSellerName() == null) {
+            existing.setSellerName(getAuthenticatedName());
+        }
         repo.save(existing);
         return ResponseEntity.ok(existing);
     }
@@ -92,8 +96,7 @@ public class ProductController {
         return ResponseEntity.noContent().build();
     }
 
-    // Internal endpoint used by order-service to decrement stock once an order is paid.
-    // Protected by the same internal-token convention as the /images endpoint below.
+    // Internal: order-service calls this to decrement stock after payment (same token convention as /images).
     @PostMapping("/stock-update")
     public ResponseEntity<Object> updateStock(@RequestBody Map<String, Object> body,
             @RequestHeader(value = "X-Internal-Token", required = false) String token) {
@@ -153,6 +156,19 @@ public class ProductController {
         if (dto.getQuantity() < 0) {
             throw new ControllerException(ResponseEntity.badRequest().body(Map.of(ERROR_KEY, "La quantité ne peut pas être négative")));
         }
+    }
+
+    // Falls back to the user id if the token predates the "name" claim.
+    private String getAuthenticatedName() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null) {
+            return null;
+        }
+        Object credentials = auth.getCredentials();
+        if (credentials instanceof String name && !name.isBlank()) {
+            return name;
+        }
+        return auth.getName();
     }
 
     private String validateSeller(String errorMsg) {

@@ -3,6 +3,7 @@ import { ProductService } from './services/product.service';
 import { MediaService } from './services/media.service';
 import { AppComponent } from './app.component';
 import { CartService } from './services/cart.service';
+import { AuthService } from './services/auth.service';
 
 @Component({
   selector: 'app-product-list',
@@ -55,6 +56,9 @@ import { CartService } from './services/cart.service';
             <span class="product-price">{{ p.price | currency:'EUR' }}</span>
           </div>
           <p class="product-description">{{ p.description || 'Aucune description' }}</p>
+          <p class="product-description" style="margin:0 0 6px 0; font-size:0.8rem; color:#6c757d;">
+            🏪 {{ p.sellerName || 'Vendeur' }}
+          </p>
           <div class="product-meta">
             <span class="product-id">🆔 {{ (p.id || p._id) | slice:0:8 }}...</span>
             <span class="product-qty">📦 {{ p.quantity }} unités</span>
@@ -67,8 +71,10 @@ import { CartService } from './services/cart.service';
               <span class="qty-value">{{ getQty(p) }}</span>
               <button class="qty-btn" type="button" (click)="increaseQty(p)" [disabled]="p.quantity === 0 || getQty(p) >= p.quantity">+</button>
             </div>
-            <button class="btn-add-to-cart" type="button" (click)="addToCart(p)" [disabled]="p.quantity === 0">
-              🛒 Ajouter
+            <button class="btn-add-to-cart" type="button" (click)="addToCart(p)"
+              [disabled]="p.quantity === 0 || isOwnProduct(p)"
+              [title]="isOwnProduct(p) ? 'Vous ne pouvez pas acheter votre propre produit' : ''">
+              {{ isOwnProduct(p) ? '🚫 Votre produit' : '🛒 Ajouter' }}
             </button>
           </div>
         </div>
@@ -84,11 +90,21 @@ export class ProductListComponent implements OnInit {
   cart: any = null;
   isOpen = false;
 
+  currentUserId: string | null = null;
+
   constructor(
     private readonly productService: ProductService,
     private readonly media: MediaService,
-    private readonly cartService: CartService
-  ) {}
+    private readonly cartService: CartService,
+    private readonly auth: AuthService
+  ) {
+    this.currentUserId = this.auth.getUserId();
+  }
+
+  isOwnProduct(p: any): boolean {
+    const ownerId = p.userId || p.sellerId;
+    return !!this.currentUserId && ownerId === this.currentUserId;
+  }
 
   
   ngOnInit() {
@@ -164,7 +180,7 @@ export class ProductListComponent implements OnInit {
       },
       error: (e) => {
         console.error(e);
-        alert('❌ Échec de l\'ajout au panier');
+        alert('❌ ' + (e?.error?.error || 'Échec de l\'ajout au panier'));
       }
     });
   }
