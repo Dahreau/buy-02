@@ -58,6 +58,7 @@ public class ProductController {
     @PostMapping
     public ResponseEntity<Object> create(@RequestBody ProductDTO dto) {
         String userId = validateSeller("Only sellers can create products");
+        validatePriceAndQuantity(dto);
         Product p = new Product();
         p.setName(dto.getName());
         p.setDescription(dto.getDescription());
@@ -65,6 +66,7 @@ public class ProductController {
         p.setQuantity(dto.getQuantity());
         p.setImageIds(dto.getImageIds());
         p.setUserId(userId);
+        p.setSellerName(getAuthenticatedName());
         Product saved = repo.save(p);
         return ResponseEntity.ok(saved);
     }
@@ -72,12 +74,16 @@ public class ProductController {
     @PutMapping("/{id}")
     public ResponseEntity<Object> update(@PathVariable String id, @RequestBody ProductDTO dto) {
         String userId = validateSeller("Only sellers can update products");
+        validatePriceAndQuantity(dto);
         Product existing = validateOwnership(id, userId, "Cannot modify another seller's product");
         existing.setName(dto.getName());
         existing.setDescription(dto.getDescription());
         existing.setPrice(dto.getPrice());
         existing.setQuantity(dto.getQuantity());
         existing.setImageIds(dto.getImageIds());
+        if (existing.getSellerName() == null) {
+            existing.setSellerName(getAuthenticatedName());
+        }
         repo.save(existing);
         return ResponseEntity.ok(existing);
     }
@@ -88,6 +94,30 @@ public class ProductController {
         validateOwnership(id, userId, "Cannot delete another seller's product");
         repo.deleteById(id);
         return ResponseEntity.noContent().build();
+    }
+
+    // Internal: order-service calls this to decrement stock after payment (same token convention as /images).
+    @PostMapping("/stock-update")
+    public ResponseEntity<Object> updateStock(@RequestBody Map<String, Object> body,
+            @RequestHeader(value = "X-Internal-Token", required = false) String token) {
+        String internalToken = System.getenv("INTERNAL_TOKEN");
+        if (internalToken == null || !internalToken.equals(token)) {
+            return ResponseEntity.status(403).body(Map.of(ERROR_KEY, "Forbidden"));
+        }
+        Object productIdObj = body.get("productId");
+        Object quantityObj = body.get("quantity");
+        if (!(productIdObj instanceof String productId) || !(quantityObj instanceof Number quantityNum)) {
+            return ResponseEntity.badRequest().body(Map.of(ERROR_KEY, "productId et quantity requis"));
+        }
+        var opt = repo.findById(productId);
+        if (opt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        Product product = opt.get();
+        int current = product.getQuantity() != null ? product.getQuantity() : 0;
+        product.setQuantity(Math.max(0, current - quantityNum.intValue()));
+        repo.save(product);
+        return ResponseEntity.ok(product);
     }
 
     // Internal endpoint to append an image/media id to a product's imageIds list.
@@ -117,6 +147,28 @@ public class ProductController {
         product.setImageIds(imgs);
         repo.save(product);
         return ResponseEntity.ok(product);
+    }
+
+    private void validatePriceAndQuantity(ProductDTO dto) {
+        if (dto.getPrice() <= 0) {
+            throw new ControllerException(ResponseEntity.badRequest().body(Map.of(ERROR_KEY, "Le prix doit être supérieur à 0")));
+        }
+        if (dto.getQuantity() < 0) {
+            throw new ControllerException(ResponseEntity.badRequest().body(Map.of(ERROR_KEY, "La quantité ne peut pas être négative")));
+        }
+    }
+
+    // Falls back to the user id if the token predates the "name" claim.
+    private String getAuthenticatedName() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null) {
+            return null;
+        }
+        Object credentials = auth.getCredentials();
+        if (credentials instanceof String name && !name.isBlank()) {
+            return name;
+        }
+        return auth.getName();
     }
 
     private String validateSeller(String errorMsg) {

@@ -11,14 +11,16 @@ import { ProductListComponent } from './product-list.component';
 import { SellerDashboardComponent } from './seller-dashboard.component';
 import { MediaManagerComponent } from './media-manager.component';
 import { CartComponent } from './cart.component';
+import { ClientDashboardComponent } from './client-dashboard.component';
 import { TokenInterceptor } from './services/token.interceptor';
-import { authGuard } from './services/auth.guard';
+import { authGuard, clientGuard, sellerGuard } from './services/auth.guard';
 
 const routes: Routes = [
   { path: '', component: ProductListComponent },
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent },
-  { path: 'seller', component: SellerDashboardComponent, canActivate: [authGuard] }
+  { path: 'seller', component: SellerDashboardComponent, canActivate: [authGuard, sellerGuard] },
+  { path: 'profile/mes-commandes', component: ClientDashboardComponent, canActivate: [authGuard , clientGuard] }
 ];
 
 @NgModule({
@@ -29,7 +31,8 @@ const routes: Routes = [
     ProductListComponent,
     SellerDashboardComponent,
     MediaManagerComponent,
-    CartComponent
+    CartComponent,
+    ClientDashboardComponent
   ],
   imports: [BrowserModule, HttpClientModule, FormsModule, RouterModule.forRoot(routes)],
   providers: [

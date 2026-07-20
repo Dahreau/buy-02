@@ -112,6 +112,7 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - INTERNAL_TOKEN=${INTERNAL_TOKEN}
       - PRODUCT_SERVICE_URL=http://product-service:8082
+      - MEDIA_UPLOAD_DIR=/app/uploads
     deploy:
       resources:
         limits:

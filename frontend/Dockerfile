@@ -1,8 +1,7 @@
 FROM nginx:alpine
 
 COPY dist/buy-frontend /usr/share/nginx/html
-
-RUN sed -i 's/listen  *80;/listen 4200;/g' /etc/nginx/conf.d/default.conf
+COPY nginx.frontend.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 4200
 

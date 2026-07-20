@@ -1,51 +1,145 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { ProductService } from './services/product.service';
 import { MediaService } from './services/media.service';
+import { AppComponent } from './app.component';
 import { CartService } from './services/cart.service';
+import { AuthService } from './services/auth.service';
 
 @Component({
   selector: 'app-product-list',
+  styleUrls: ['../styles/ui.css'],
   template: `
-  <div class="d-flex flex-column mb-3">
-    <div class="d-flex justify-content-between align-items-center mb-2">
-      <h3 class="mb-0">Products</h3>
+      
+    <!-- ===== EN-TÊTE PRODUITS ===== -->
+    <div class="products-header">
+      <div>
+        <h4>🛍️ Produits</h4>
+        <p class="page-subtitle">Découvrez les produits disponibles</p>
+      </div>
+      <div class="vendor-badge">
+        <span class="dot"></span> Catalogue
+      </div>
     </div>
-    <div class="d-flex gap-2">
-      <input #searchInput class="form-control search-input" type="search" placeholder="Search products..." (input)="onSearch(searchInput.value, minInput.value, maxInput.value)" />
-      <input #minInput class="form-control" type="number" placeholder="Min Price" (input)="onSearch(searchInput.value, minInput.value, maxInput.value)" style="max-width: 150px;" />
-      <input #maxInput class="form-control" type="number" placeholder="Max Price" (input)="onSearch(searchInput.value, minInput.value, maxInput.value)" style="max-width: 150px;" />
-    </div>
-  </div>
-  <div class="row g-3">
-    <div class="col-md-6" *ngFor="let p of filteredProducts">
-      <div class="card product-card">
-        <div *ngIf="p.images && p.images.length" class="card-img-top text-center" style="padding:8px;">
-          <img [src]="p.images[0].imagePath" alt="" style="max-width:100%;max-height:240px;object-fit:contain" />
+
+    <!-- ===== FORMULAIRE DE RECHERCHE ===== -->
+    <div class="form-card mb-4">
+      <div class="form-row" style="grid-template-columns: 2fr 1fr 1fr; margin-bottom: 0;">
+        <div class="form-group full-width">
+          <label>Recherche</label>
+          <input #searchInput class="form-control" type="search" placeholder="Search products..." (input)="onSearch(searchInput.value, minInput.value, maxInput.value)" />
         </div>
-        <div class="card-body">
-          <h5 class="card-title">{{p.name}} <span class="badge bg-primary">{{p.price | currency}}</span></h5>
-          <div class="small-id">id: {{p.id || p._id}}</div>
-          <p class="card-text product-description">{{p.description}}</p>
-          <button class="btn btn-sm btn-success mt-2" (click)="addToCart(p.id || p._id)">Ajouter au panier</button>
+        <div class="form-group">
+          <label>Prix min</label>
+          <input #minInput class="form-control" type="number" placeholder="Min Price" (input)="onSearch(searchInput.value, minInput.value, maxInput.value)" />
+        </div>
+        <div class="form-group">
+          <label>Prix max</label>
+          <input #maxInput class="form-control" type="number" placeholder="Max Price" (input)="onSearch(searchInput.value, minInput.value, maxInput.value)" />
         </div>
       </div>
     </div>
-  </div>
-`
+
+    <!-- ===== GRILLE DES PRODUITS ===== -->
+    <div class="products-grid">
+      <div class="product-card" *ngFor="let p of filteredProducts">
+        <div class="product-image-wrapper">
+          <img *ngIf="p.images && p.images.length" [src]="p.images[0].imagePath" alt="{{p.name}}" />
+          <div *ngIf="!p.images || !p.images.length" class="no-image">🖼️</div>
+          <span class="stock-badge" [class.in-stock]="p.quantity > 5" [class.low-stock]="p.quantity <= 5 && p.quantity > 0" [class.out-of-stock]="p.quantity === 0">
+            {{ p.quantity === 0 ? 'Rupture' : (p.quantity <= 10 ? 'Stock faible' : 'En stock') }}
+          </span>
+        </div>
+
+        <div class="product-body">
+          <div class="product-header">
+            <h5 class="product-name">{{ p.name }}</h5>
+            <span class="product-price">{{ p.price | currency:'EUR' }}</span>
+          </div>
+          <p class="product-description">{{ p.description || 'Aucune description' }}</p>
+          <p class="product-description" style="margin:0 0 6px 0; font-size:0.8rem; color:#6c757d;">
+            🏪 {{ p.sellerName || 'Vendeur' }}
+          </p>
+          <div class="product-meta">
+            <span class="product-id">🆔 {{ (p.id || p._id) | slice:0:8 }}...</span>
+            <span class="product-qty">📦 {{ p.quantity }} unités</span>
+          </div>
+
+          <!-- ===== COMPTEUR + BOUTON AJOUTER ===== -->
+          <div class="product-cart-actions">
+            <div class="qty-selector">
+              <button class="qty-btn" type="button" (click)="decreaseQty(p)" [disabled]="getQty(p) <= 1 || p.quantity === 0">−</button>
+              <span class="qty-value">{{ getQty(p) }}</span>
+              <button class="qty-btn" type="button" (click)="increaseQty(p)" [disabled]="p.quantity === 0 || getQty(p) >= p.quantity">+</button>
+            </div>
+            <button class="btn-add-to-cart" type="button" (click)="addToCart(p)"
+              [disabled]="p.quantity === 0 || isOwnProduct(p)"
+              [title]="isOwnProduct(p) ? 'Vous ne pouvez pas acheter votre propre produit' : ''">
+              {{ isOwnProduct(p) ? '🚫 Votre produit' : '🛒 Ajouter' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `
 })
 export class ProductListComponent implements OnInit {
+  @ViewChild(AppComponent) appComponent!: AppComponent;
   products: any[] = [];
   filteredProducts: any[] = [];
+  quantities: { [productId: string]: number } = {};
+  cart: any = null;
+  isOpen = false;
 
-  constructor(private readonly productService: ProductService, private readonly media: MediaService, private readonly cartService: CartService) {}
+  currentUserId: string | null = null;
 
+  constructor(
+    private readonly productService: ProductService,
+    private readonly media: MediaService,
+    private readonly cartService: CartService,
+    private readonly auth: AuthService
+  ) {
+    this.currentUserId = this.auth.getUserId();
+  }
+
+  isOwnProduct(p: any): boolean {
+    const ownerId = p.userId || p.sellerId;
+    return !!this.currentUserId && ownerId === this.currentUserId;
+  }
+
+  
   ngOnInit() {
     this.productService.listAll().subscribe(data => {
       this.products = data;
       this.filteredProducts = data;
-      // Fetch media for each product (best-effort)
       this.fetchImages(this.filteredProducts);
+      this.initQuantities(this.filteredProducts);
     });
+  }
+
+  initQuantities(productList: any[]) {
+    for (const p of productList) {
+      const id = p.id || p._id;
+      this.quantities[id] = 1;
+    }
+  }
+
+  getQty(p: any): number {
+    const id = p.id || p._id;
+    return this.quantities[id] || 1;
+  }
+
+  increaseQty(p: any) {
+    const id = p.id || p._id;
+    if (this.quantities[id] < p.quantity) {
+      this.quantities[id] = (this.quantities[id] || 1) + 1;
+    }
+  }
+
+  decreaseQty(p: any) {
+    const id = p.id || p._id;
+    if (this.quantities[id] > 1) {
+      this.quantities[id] = (this.quantities[id] || 1) - 1;
+    }
   }
 
   onSearch(term: string, minPrice: string, maxPrice: string) {
@@ -57,12 +151,12 @@ export class ProductListComponent implements OnInit {
       next: response => {
         this.filteredProducts = response.content;
         this.fetchImages(this.filteredProducts);
+        this.initQuantities(this.filteredProducts);
       },
-      error: err => {
-        console.error(err);
-      }
+      error: err => console.error(err)
     });
   }
+  
 
   fetchImages(productList: any[]) {
     for (const p of productList) {
@@ -73,13 +167,26 @@ export class ProductListComponent implements OnInit {
       });
     }
   }
-
-  addToCart(productId: string) {
-    if (!productId) return;
-    
-    this.cartService.addToCart({ productId, quantity: 1 }).subscribe({
-      next: () => console.log('Produit ajouté au panier avec succès'),
-      error: err => console.error('Erreur lors de l\'ajout', err)
+  
+  addToCart(p: any) {
+    const productId = p.id || p._id;
+    const qty = this.getQty(p);
+    this.cartService.addToCart({ productId, quantity: qty }).subscribe({
+      next: () => {
+        alert(`✅ ${qty} × "${p.name}" ajouté au panier !`);
+        this.quantities[productId] = 1;
+        // 🔥 Recharge le panier via AppComponent
+        this.appComponent.loadCart();
+      },
+      error: (e) => {
+        console.error(e);
+        alert('❌ ' + (e?.error?.error || 'Échec de l\'ajout au panier'));
+      }
     });
+  }
+
+  checkout() {
+    // Implémentation simplifiée
+    alert('Fonctionnalité checkout à venir');
   }
 }

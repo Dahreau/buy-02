@@ -31,10 +31,12 @@ import com.example.mediaservice.repository.MediaRepository;
 @RequestMapping("/api/media")
 public class MediaController {
     private final MediaRepository repo;
-    private final Path uploadDir = Paths.get("uploads");
+    private final Path uploadDir;
 
     public MediaController(MediaRepository repo) throws IOException {
         this.repo = repo;
+        String dir = System.getenv("MEDIA_UPLOAD_DIR");
+        this.uploadDir = Paths.get((dir != null && !dir.isBlank()) ? dir : "uploads");
         if (!Files.exists(uploadDir)) Files.createDirectories(uploadDir);
     }
 

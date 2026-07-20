@@ -23,7 +23,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 Claims claims = JwtUtil.parseToken(token);
                 String userId = claims.getSubject();
                 String role = (String) claims.get("role");
-                var auth = new UsernamePasswordAuthenticationToken(userId, null, List.of(new SimpleGrantedAuthority("ROLE_" + role)));
+                String name = (String) claims.get("name");
+                // Reuse "credentials" to carry the display name; unused otherwise since JWT auth has no password.
+                var auth = new UsernamePasswordAuthenticationToken(userId, name, List.of(new SimpleGrantedAuthority("ROLE_" + role)));
                 SecurityContextHolder.getContext().setAuthentication(auth);
             } catch (Exception e) {
                 // invalid token - no auth

@@ -1,19 +1,37 @@
-import { Component } from '@angular/core';
+import { Component, ViewChild } from '@angular/core';
+import { CartComponent } from './cart.component';
+import { AuthService } from './services/auth.service';
 import { Observable } from 'rxjs';
-import { AuthService} from "./services/auth.service";
 
 @Component({
   selector: 'app-root',
-  templateUrl: './app.component.html'
+  templateUrl: './app.component.html',
+  // styleUrls: ['./app.component.css']   // ← SUPPRIME CETTE LIGNE ou crée un fichier vide
 })
 export class AppComponent {
-    public isLoggedIn$: Observable<boolean>;
+  @ViewChild('cart') cartComponent!: CartComponent;
+  isLoggedIn$: Observable<boolean>;
 
-    constructor(private readonly authService: AuthService) {
-        this.isLoggedIn$ = this.authService.isLoggedIn$;
-    }
+  constructor(private readonly auth: AuthService) {
+    this.isLoggedIn$ = this.auth.isLoggedIn$;
+  }
 
-    logout(): void {
-        this.authService.logout();
-    }
+  toggleCart(): void {
+    this.cartComponent?.toggleCart();
+  }
+  loadCart(): void {
+    this.cartComponent?.loadCart();
+  }
+
+  logout(): void {
+    this.auth.logout();
+  }
+
+  isSeller(): boolean {
+    return this.auth.isSeller();
+  }
+
+  getUserName(): string | null {
+    return this.auth.getUserName();
+  }
 }

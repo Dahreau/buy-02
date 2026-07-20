@@ -14,6 +14,7 @@ public class Product {
     private Double price;
     private Integer quantity;
     private String userId; // seller id
+    private String sellerName; // denormalized for product listings
     private List<String> imageIds; // references to Media documents
 
     public Product() {}
@@ -31,6 +32,8 @@ public class Product {
     public void setQuantity(Integer quantity) { this.quantity = quantity; }
     public String getUserId() { return userId; }
     public void setUserId(String userId) { this.userId = userId; }
+    public String getSellerName() { return sellerName; }
+    public void setSellerName(String sellerName) { this.sellerName = sellerName; }
     public List<String> getImageIds() { return imageIds; }
     public void setImageIds(List<String> imageIds) { this.imageIds = imageIds; }
 }

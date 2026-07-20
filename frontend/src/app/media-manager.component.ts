@@ -1,4 +1,4 @@
-import { Component, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, Output, EventEmitter } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { ProductService } from './services/product.service';
 import { AuthService } from './services/auth.service';
@@ -27,7 +27,7 @@ import { AuthService } from './services/auth.service';
     </div>
   `
 })
-export class MediaManagerComponent {
+export class MediaManagerComponent implements OnInit {
   @Output() uploaded = new EventEmitter<void>();
   productId = '';
   file: File | null = null;
