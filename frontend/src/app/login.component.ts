@@ -7,7 +7,7 @@ import { AuthService } from './services/auth.service';
   template: `
     <form class="form" (submit)="login($event)">
       <p class="heading">Login</p>
-      <input class="input" placeholder="Username" type="text" name="email" [(ngModel)]="email">
+      <input class="input" placeholder="Email" type="text" name="email" [(ngModel)]="email">
       <input class="input" placeholder="Password" type="password" name="password" [(ngModel)]="password">
       <button class="btn" type="submit">Submit</button>
       <div *ngIf="error" style="color:red; text-align:center; margin-top: 0.5rem;">{{error}}</div>
