@@ -1,4 +1,4 @@
-import { Component, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, Output, EventEmitter } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { ProductService } from './services/product.service';
 import { AuthService } from './services/auth.service';
@@ -27,7 +27,7 @@ import { AuthService } from './services/auth.service';
     </div>
   `
 })
-export class MediaManagerComponent {
+export class MediaManagerComponent implements OnInit {
   @Output() uploaded = new EventEmitter<void>();
   productId = '';
   file: File | null = null;
@@ -35,7 +35,7 @@ export class MediaManagerComponent {
   products: any[] = [];
   constructor(private readonly http: HttpClient, private readonly productService: ProductService, private readonly auth: AuthService) {}
 
-  OnInit(): void {
+  ngOnInit(): void {
     // load products so the user can pick one by name (and we show the id in the option)
     this.productService.listAll().subscribe({ 
       next: (data: any[]) => {

@@ -54,13 +54,14 @@ export class SellerDashboardComponent implements OnInit {
         this.myProducts = [];
         return;
       }
-        for (const p of this.myProducts) {
-      const pid = p.id || p._id;
-      this.media.byProduct(pid).subscribe({
-        next: (meds) => (p.images = meds),
-        error: () => (p.images = [])
-      });
-    }
+      this.myProducts = data.filter((p) => p.userId === userId);
+      for (const p of this.myProducts) {
+        const pid = p.id || p._id;
+        this.media.byProduct(pid).subscribe({
+          next: (meds) => (p.images = meds),
+          error: () => (p.images = [])
+        });
+      }
     });
   }
 
