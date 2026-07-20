@@ -5,7 +5,7 @@ import { Order, UserStats, Page, CheckoutRequest } from '../models/order.model';
 
 @Injectable({ providedIn: 'root' })
 export class OrderService {
-  private readonly baseUrl = '/api/orders';
+  private readonly baseUrl = 'http://localhost:8084/api/orders';
 
   constructor(private readonly http: HttpClient) {}
 
@@ -73,6 +73,6 @@ export class OrderService {
   // ==================== CHECKOUT ====================
 
   checkout(request: CheckoutRequest): Observable<Order> {
-    return this.http.post<Order>(`/api/carts/checkout`, request);
+    return this.http.post<Order>(`http://localhost:8084/api/orders/checkout`, request);
   }
 }

@@ -58,6 +58,7 @@ public class ProductController {
     @PostMapping
     public ResponseEntity<Object> create(@RequestBody ProductDTO dto) {
         String userId = validateSeller("Only sellers can create products");
+        validatePriceAndQuantity(dto);
         Product p = new Product();
         p.setName(dto.getName());
         p.setDescription(dto.getDescription());
@@ -72,6 +73,7 @@ public class ProductController {
     @PutMapping("/{id}")
     public ResponseEntity<Object> update(@PathVariable String id, @RequestBody ProductDTO dto) {
         String userId = validateSeller("Only sellers can update products");
+        validatePriceAndQuantity(dto);
         Product existing = validateOwnership(id, userId, "Cannot modify another seller's product");
         existing.setName(dto.getName());
         existing.setDescription(dto.getDescription());
@@ -117,6 +119,15 @@ public class ProductController {
         product.setImageIds(imgs);
         repo.save(product);
         return ResponseEntity.ok(product);
+    }
+
+    private void validatePriceAndQuantity(ProductDTO dto) {
+        if (dto.getPrice() <= 0) {
+            throw new ControllerException(ResponseEntity.badRequest().body(Map.of(ERROR_KEY, "Le prix doit être supérieur à 0")));
+        }
+        if (dto.getQuantity() < 0) {
+            throw new ControllerException(ResponseEntity.badRequest().body(Map.of(ERROR_KEY, "La quantité ne peut pas être négative")));
+        }
     }
 
     private String validateSeller(String errorMsg) {

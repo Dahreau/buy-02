@@ -42,6 +42,6 @@ export class CartService {
     return this.http.delete<void>(`${this.apiUrl}/clear`);
   }
   checkoutCart(payload: any): Observable<any> {
-  return this.http.post('/api/carts/checkout', payload);
+  return this.http.post('http://localhost:8084/api/orders/checkout', payload);
   }
 }

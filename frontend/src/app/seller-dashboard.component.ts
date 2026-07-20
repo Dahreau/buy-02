@@ -66,6 +66,16 @@ export class SellerDashboardComponent implements OnInit {
 
   saveProduct(evt: Event) {
     evt.preventDefault();
+
+    if (!this.price || this.price <= 0) {
+      alert('Le prix doit être supérieur à 0.');
+      return;
+    }
+    if (this.quantity == null || this.quantity < 0) {
+      alert('La quantité ne peut pas être négative.');
+      return;
+    }
+
     const userId = this.auth.getUserId();
     const body = {
       name: this.name,
@@ -105,7 +115,10 @@ export class SellerDashboardComponent implements OnInit {
           this.loadMyProducts();
         }
       },
-      error: () => alert(this.editingProductId ? 'Échec mise à jour' : 'Échec création')
+      error: (err) => {
+        const msg = err?.error?.error;
+        alert(msg || (this.editingProductId ? 'Échec mise à jour' : 'Échec création'));
+      }
     });
   }
 
