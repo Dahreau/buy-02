@@ -39,7 +39,6 @@ services:
 
   sonarqube:
     image: sonarqube:latest
-    container_name: sonarqube
     depends_on:
       - sonarqube-db
     ports:

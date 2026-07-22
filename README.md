@@ -20,6 +20,8 @@ Le détail technique est dans [`docs/`](./docs) :
 | [docs/frontend.md](./docs/frontend.md) | Structure de l'application Angular, routing, services, guards |
 | [docs/setup.md](./docs/setup.md) | Lancer le projet en local, variables d'environnement, CI/CD Jenkins |
 | [docs/glossary.md](./docs/glossary.md) | Définitions des notions techniques employées dans le code (pour qui découvre) |
+| [docs/audit.md](./docs/audit.md) | Vérification détaillée de chaque critère de la grille d'audit, avec preuves dans le code |
+| [docs/code-review-prep.md](./docs/code-review-prep.md) | Cheat sheet pour se préparer à un code review (questions probables + réponses courtes) |
 
 Voir aussi [`AUDIT_EVALUATION.md`](./AUDIT_EVALUATION.md), [`TEST_PLAN.md`](./TEST_PLAN.md) et [`REPORT_TESTING.md`](./REPORT_TESTING.md) pour le détail des critères d'audit et des tests — ces documents datent d'une étape antérieure du projet (avant order-service/cart-service) et se concentrent sur les 3 premiers services ; `docs/` ci-dessus reflète l'état actuel des 5 services.
 
