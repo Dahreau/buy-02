@@ -17,11 +17,11 @@ Ce document reprend **chaque ligne de la grille d'audit officielle**, from scrat
 
 Oui. Chaque microservice a sa propre base MongoDB (pattern *database-per-service*), avec des collections explicitement déclarées :
 
-- `Product` → `@Document(collection = "products")` (`product-service/model/Product.java`)
-- `Order` → `@Document(collection = "orders")` (`order-service/model/Order.java`)
-- `Cart` → `@Document(collection = "carts")` (`cart-service/model/Cart.java`)
-- `Media` → `@Document(collection = "media")` (`media-service/model/Media.java`)
-- `User` → `@Document(collection = "users")` (`user-service/model/User.java`)
+- `Product` → `@Document(collection = "products")` — `backend/product-service/src/main/java/com/example/productservice/model/Product.java:8`
+- `Order` → `@Document(collection = "orders")` — `backend/order-service/src/main/java/com/example/orderservice/model/Order.java:17`
+- `Cart` → `@Document(collection = "carts")` — `backend/cart-service/src/main/java/com/example/cartservice/model/Cart.java:19`
+- `Media` → `@Document(collection = "media")` — `backend/media-service/src/main/java/com/example/mediaservice/model/Media.java:6`
+- `User` → `@Document(collection = "users")` — `backend/user-service/src/main/java/com/example/userservice/model/User.java:6`
 
 Chaque champ a un type cohérent avec son usage (`BigDecimal`/`Double` pour les montants, `enum` pour les statuts/rôles, `LocalDateTime` pour les dates). Détail complet dans [database.md](./database.md).
 
@@ -31,7 +31,7 @@ Deux techniques utilisées, correctement, aux bons endroits :
 
 1. **Référencement par ID** entre services : `Product.userId` → vendeur, `Media.productId` → produit, `CartItem.productId`/`OrderItem.productId` → produit, `OrderItem.sellerId` → vendeur.
 2. **Documents imbriqués** : `Cart.items: List<CartItem>`, `Order.items: List<OrderItem>` — pas de collection séparée, cohérent avec le fait qu'un item de panier/commande n'a aucun sens hors de son panier/commande parent.
-3. **Dénormalisation volontaire et justifiée** : `OrderItem.priceAtPurchase` fige le prix au moment de l'achat (`OrderService.checkout()`, ligne qui construit `OrderItem.builder().priceAtPurchase(item.getPrice())...`), pour que l'historique de commande ne bouge jamais même si le vendeur change son prix après coup. `Product.sellerName` est copié depuis le JWT à la création (`ProductController.create()`) pour afficher le nom du vendeur sans appel réseau supplémentaire à chaque affichage de la liste produits.
+3. **Dénormalisation volontaire et justifiée** : `OrderItem.priceAtPurchase` fige le prix au moment de l'achat — `backend/order-service/src/main/java/com/example/orderservice/service/OrderService.java:291` (`.priceAtPurchase(item.getPrice())` dans `checkout()`), pour que l'historique de commande ne bouge jamais même si le vendeur change son prix après coup. `Product.sellerName` est copié depuis le JWT à la création — `backend/product-service/src/main/java/com/example/productservice/controller/ProductController.java:69` (`p.setSellerName(getAuthenticatedName())` dans `create()`) pour afficher le nom du vendeur sans appel réseau supplémentaire à chaque affichage de la liste produits.
 
 Ce ne sont pas des relations ajoutées au hasard : chacune correspond à un besoin fonctionnel réel du projet (voir [database.md](./database.md#3-comment-les-relations-sont-gérées-sans-jointure) pour le détail).
 
@@ -39,9 +39,9 @@ Ce ne sont pas des relations ajoutées au hasard : chacune correspond à un beso
 
 Trois exemples concrets qui montrent une vraie réflexion, pas juste "ça marche" :
 
-- `Cart.userId` porte `@Indexed(unique = true)` (`cart-service/model/Cart.java`) : la règle "un utilisateur = un seul panier actif" est imposée **par MongoDB lui-même**, pas seulement par la logique applicative — même un bug côté service ne pourrait pas créer deux paniers pour le même utilisateur.
-- `OrderItem.sellerId` est dupliqué exprès pour permettre à `order-service` de répondre à `GET /api/orders/seller` (`OrderRepository`/`OrderService.searchOrders`, filtre Mongo `items.sellerId`) sans jamais interroger `product-service` — chaque service reste indépendant même pour une requête qui "traverse" plusieurs domaines métier.
-- Le prix figé (`priceAtPurchase`) résout un vrai problème d'intégrité temporelle qu'un design naïf (juste référencer `productId` et relire le prix courant) aurait introduit silencieusement.
+- `Cart.userId` porte `@Indexed(unique = true)` — `backend/cart-service/src/main/java/com/example/cartservice/model/Cart.java:25` : la règle "un utilisateur = un seul panier actif" est imposée **par MongoDB lui-même**, pas seulement par la logique applicative — même un bug côté service ne pourrait pas créer deux paniers pour le même utilisateur.
+- `OrderItem.sellerId` est dupliqué exprès pour permettre à `order-service` de répondre à `GET /api/orders/seller` sans jamais interroger `product-service` : le filtre Mongo `items.sellerId` est appliqué directement dans `OrderService.searchOrders()` — `backend/order-service/src/main/java/com/example/orderservice/service/OrderService.java:171` (`Criteria.where(ITEMS_SELLER_ID_FIELD).is(sellerId)`) — chaque service reste indépendant même pour une requête qui "traverse" plusieurs domaines métier.
+- Le prix figé (`priceAtPurchase`, `OrderService.java:291`) résout un vrai problème d'intégrité temporelle qu'un design naïf (juste référencer `productId` et relire le prix courant) aurait introduit silencieusement.
 
 ### ⚠️ Are developers following a collaborative development process with PRs and code reviews ?
 
@@ -57,22 +57,22 @@ Ce que je **n'ai pas pu vérifier** depuis cet environnement (accès réseau res
 Repris fonctionnalité par fonctionnalité par rapport à l'énoncé :
 
 **Orders MicroService**
-- Suivi de statut : ✅ `PENDING → PAID → SHIPPED → DELIVERED`, plus `CANCELLED`, avec transitions contrôlées côté serveur (`OrderService.updateOrderStatus`) et affichées comme badge + menu déroulant côté vendeur (`seller-dashboard.component.html`).
-- Liste des commandes, utilisateur ET vendeur, avec recherche : ✅ `OrderController.getMyOrders` / `getSellerOrders`, tous deux acceptent `status`, `start`, `end`, `keyword`, pagination (`OrderService.searchOrders`). Le frontend expose mot-clé + filtre statut côté client (`client-dashboard.component.html`).
-- Remove / cancel / redo : ✅ les trois existent et sont branchés côté UI (`cancelOrder`, `redoOrder`, `deleteOrder` dans `client-dashboard.component.ts`), avec les règles métier associées côté serveur (annulation seulement si `PENDING`, suppression seulement si `DELIVERED`/`CANCELLED`).
+- Suivi de statut : ✅ `PENDING → PAID → SHIPPED → DELIVERED`, plus `CANCELLED`, avec transitions contrôlées côté serveur — `backend/order-service/src/main/java/com/example/orderservice/service/OrderService.java:225` (`updateOrderStatus`, vérifie `isSellerOfOrder` avant tout changement) et affichées comme badge + menu déroulant côté vendeur — `frontend/src/app/seller-dashboard.component.html:199-212`.
+- Liste des commandes, utilisateur ET vendeur, avec recherche : ✅ `OrderController.getMyOrders` (`backend/order-service/src/main/java/com/example/orderservice/controller/OrderController.java:64`) / `getSellerOrders` (`OrderController.java:80`), tous deux délèguent à `OrderService.searchOrders` (`OrderService.java:162`) qui accepte `status`, `start`, `end`, `keyword`, pagination. Le frontend expose mot-clé + filtre statut côté client — `frontend/src/app/client-dashboard.component.html:37-53`.
+- Remove / cancel / redo : ✅ les trois sont branchés côté UI — `cancelOrder` (`frontend/src/app/client-dashboard.component.ts:70`), `redoOrder` (`:82`), `deleteOrder` (`:94`) — avec les règles métier associées côté serveur : annulation seulement si `PENDING` (`OrderService.java:201`), suppression seulement si `DELIVERED`/`CANCELLED` (`OrderService.java:218`).
 
 **User Profile / Seller Profile**
-- Client : dépenses totales, nombre de commandes, produit le plus acheté (`UserStatsDTO`, agrégation Mongo dans `OrderService.getUserStats`, affiché dans `client-dashboard.component.html`).
-- Vendeur : chiffre d'affaires, commandes livrées, meilleur produit vendu (`SellerStatsDTO`, `OrderService.getSellerStats`, affiché dans `seller-dashboard.component.html`).
-- Nuance : les deux DTO retournent un **top 5** (`topProducts`/`bestSellers`), mais l'UI n'affiche que le premier élément ("produit favori"/"meilleur vendeur"). La donnée est là, l'exploitation UI est minimale — pas un manque au sens strict de l'énoncé, mais peu impressionnant visuellement si on te le demande en review.
+- Client : dépenses totales, nombre de commandes, produit le plus acheté — `UserStatsDTO`, agrégation Mongo dans `OrderService.getUserStats()` (`backend/order-service/src/main/java/com/example/orderservice/service/OrderService.java:65`), affiché dans `frontend/src/app/client-dashboard.component.html:9-31`.
+- Vendeur : chiffre d'affaires, commandes livrées, meilleur produit vendu — `SellerStatsDTO`, `OrderService.getSellerStats()` (`OrderService.java:110`), affiché dans `frontend/src/app/seller-dashboard.component.html:132-154`.
+- Nuance : les deux DTO retournent un **top 5** (`topProducts`/`bestSellers`), mais l'UI n'affiche que le premier élément ("produit favori"/"meilleur vendeur") — `client-dashboard.component.html:28` (`topProducts[0]`), `seller-dashboard.component.html:151` (`bestSellers[0]`). La donnée est là, l'exploitation UI est minimale — pas un manque au sens strict de l'énoncé, mais peu impressionnant visuellement si on te le demande en review.
 
 **Search and Filtering**
-- ✅ Recherche par mot-clé + fourchette de prix, paginée (`ProductController.searchProducts`, `ProductRepository.searchAndFilter`), avec formulaire correspondant sur la page produits (`product-list.component.ts`).
+- ✅ Recherche par mot-clé + fourchette de prix, paginée — `ProductController.searchProducts()` (`backend/product-service/src/main/java/com/example/productservice/controller/ProductController.java:205`) délègue à `ProductRepository.searchAndFilter()` (`ProductRepository.java:20`), avec formulaire correspondant sur la page produits — `frontend/src/app/product-list.component.ts:24-40` (template inline).
 
 **Shopping Cart**
 - ✅ Ajout, modification de quantité, suppression, vidage — persistés côté serveur (voir case dédiée plus bas).
-- ✅ "Pay on delivery" : `CheckoutRequest.paymentMethod` envoyé tel quel (`"PAY_ON_DELIVERY"`, en dur côté `cart.component.ts`), stocké sur la commande.
-- ✅ Un vendeur ne peut pas acheter son propre produit (`CartService.addToCart`, comparaison `userId` / `product.getUserId()`).
+- ✅ "Pay on delivery" : `paymentMethod` envoyé tel quel (`"PAY_ON_DELIVERY"`, en dur) — `frontend/src/app/cart.component.ts:64`, stocké sur la commande.
+- ✅ Un vendeur ne peut pas acheter son propre produit — `backend/cart-service/src/main/java/com/example/cartservice/service/CartService.java:42-44` (comparaison `userId.equals(product.getUserId())` dans `addToCart()`, throw si vrai).
 
 **Verdict global** : cohérent avec l'énoncé sur le fond. Le point "⚠️" plutôt que "✅" tient à deux nuances mineures (top 5 sous-exploité côté UI, et à la case suivante sur la propreté/absence d'erreurs — voir juste en dessous) plutôt qu'à une fonctionnalité manquante.
 
@@ -89,7 +89,7 @@ Je marque ce point ⚠️ non pas parce qu'un problème est identifié, mais par
 
 ### ✅ Add products to the shopping cart and refresh the page — are they still there with the right quantities ?
 
-Oui, par construction : le panier n'est **jamais** stocké côté client (pas de `localStorage`/state Angular persistant). `CartComponent.ngOnInit()` appelle `loadCart()` qui fait `GET /api/carts`, lu depuis MongoDB (`CartService.getCartByUserId`, `cart-service`). Un F5 recharge toute l'application Angular, ce qui redéclenche cet appel — le panier revient tel qu'il était en base, quantités incluses. Pas de mécanisme de cache local qui pourrait le désynchroniser.
+Oui, par construction : le panier n'est **jamais** stocké côté client (pas de `localStorage`/state Angular persistant). `CartComponent.ngOnInit()` (`frontend/src/app/cart.component.ts:20-22`) appelle `loadCart()` (`:24-29`) qui fait `GET /api/carts`, lu depuis MongoDB via `CartService.getCartByUserId()` (`backend/cart-service/src/main/java/com/example/cartservice/service/CartService.java:27-30`). Un F5 recharge toute l'application Angular, ce qui redéclenche cet appel — le panier revient tel qu'il était en base, quantités incluses. Pas de mécanisme de cache local qui pourrait le désynchroniser.
 
 ### ✅ Are code quality issues identified by SonarQube being addressed and fixed ?
 
@@ -103,7 +103,7 @@ Des media queries existent (`responsive.css`, `cart.css`) à 480px et 768px, cou
 
 ### ✅ Are user interactions handled gracefully with appropriate error messages ?
 
-Oui, de façon assez systématique : validations prix/quantité (backend `ProductController.validatePriceAndQuantity` + frontend `min`/`required`), messages d'erreur backend remontés dans les `alert()` frontend plutôt que des messages génériques (ex. `saveProduct`, `addToCart` affichent `err.error.error` s'il existe), erreurs de validation `@Valid` maintenant renvoyées avec un message par champ plutôt qu'un dump technique brut (`GlobalExceptionHandler.handleValidationException`, cart-service et order-service). Chaque guard de route redirige proprement (`/login`) plutôt que de laisser une page cassée.
+Oui, de façon assez systématique : validations prix/quantité (backend `ProductController.validatePriceAndQuantity()` — `backend/product-service/src/main/java/com/example/productservice/controller/ProductController.java:149`, appelée depuis `create()`/`update()` aux lignes 61 et 77 — + frontend `min`/`required` sur les champs du formulaire, `frontend/src/app/seller-dashboard.component.html:47-53`), messages d'erreur backend remontés dans les `alert()` frontend plutôt que des messages génériques (ex. `saveProduct()` — `frontend/src/app/seller-dashboard.component.ts:119-122` — affiche `err.error.error` s'il existe), erreurs de validation `@Valid` renvoyées avec un message par champ plutôt qu'un dump technique brut (`GlobalExceptionHandler.handleValidationException()` — `backend/cart-service/src/main/java/com/example/cartservice/config/GlobalExceptionHandler.java:16` et l'équivalent `backend/order-service/src/main/java/com/example/orderservice/config/GlobalExceptionHandler.java:16`). Chaque guard de route redirige proprement (`/login`) plutôt que de laisser une page cassée — `frontend/src/app/services/auth.guard.ts` (les trois guards `authGuard`/`sellerGuard`/`clientGuard` font tous `router.navigate(['/login'])` si pas de token).
 
 ### ✅ Are security measures consistently applied throughout the application ?
 

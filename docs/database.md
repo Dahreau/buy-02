@@ -96,16 +96,40 @@ Les fichiers image eux-mêmes ne sont pas dans MongoDB : ils sont stockés sur d
 
 ## 3. Comment les "relations" sont gérées sans jointure
 
-En SQL classique on ferait une jointure (`orders JOIN products ON ...`). Ici, comme les données sont dans des bases (et des services) différents, deux techniques sont utilisées ensemble :
+En SQL classique on ferait une jointure (`orders JOIN products ON ...`). Ici, comme les données sont dans des bases (et des services) différents, deux techniques sont utilisées ensemble — avec, pour chacune, l'endroit exact du code où ça se passe (ouvre le fichier à la ligne indiquée, ne prends rien ci-dessous pour argent comptant sans vérifier) :
 
-1. **Référencement par identifiant** — un document garde juste l'`_id` d'un document d'un autre service (`Product.userId`, `Media.productId`, `CartItem.productId`, `OrderItem.productId`...). Pour obtenir le détail, il faut un appel HTTP vers le service propriétaire (ex. le frontend appelle `media-service` avec le `productId` pour récupérer les images d'un produit).
+### 1. Référencement par identifiant
 
-2. **Dénormalisation (duplication volontaire)** — certains champs sont **copiés** dans le document au moment où c'est pertinent, pour éviter un appel réseau à chaque lecture et pour figer une valeur dans le temps :
-   - `CartItem.productName` / `price` / `sellerId` : copiés depuis `product-service` quand l'article est ajouté au panier.
-   - `OrderItem.productName` / `priceAtPurchase` / `sellerId` : copiés depuis le panier au moment du checkout — **c'est fait exprès** : le prix affiché dans l'historique d'une commande ne doit jamais changer, même si le vendeur modifie le prix du produit après coup.
-   - `Product.sellerName` : copié depuis le JWT au moment de la création du produit, pour afficher le nom du vendeur dans la liste produits sans appeler `user-service` à chaque fois.
+Le champ lui-même (juste une `String`, aucun lien technique, aucune jointure possible) :
 
-Le compromis classique de la dénormalisation : ces copies peuvent devenir "périmées" (ex. si un vendeur change son nom, ses produits déjà créés garderont l'ancien `sellerName` jusqu'à la prochaine modification du produit — voir `ProductController.update()`, qui ne réécrit `sellerName` que s'il était vide). C'est un choix assumé, cohérent avec le reste du projet (le prix figé des commandes fonctionne sur le même principe).
+| Référence | Où dans le code |
+|---|---|
+| `Product.userId` (pointe vers `userdb.users._id`) | `backend/product-service/src/main/java/com/example/productservice/model/Product.java:16` |
+| `Media.productId` (pointe vers `productdb.products._id`) | `backend/media-service/src/main/java/com/example/mediaservice/model/Media.java:11` |
+| `CartItem.productId` | `backend/cart-service/src/main/java/com/example/cartservice/model/CartItem.java:16` |
+| `OrderItem.productId` | `backend/order-service/src/main/java/com/example/orderservice/model/OrderItem.java:15` |
+
+L'appel HTTP qui va chercher le détail derrière cette référence — exemple complet, le frontend qui récupère les images d'un produit :
+
+1. `frontend/src/app/product-list.component.ts:161-169` — la méthode `fetchImages()` boucle sur les produits affichés et appelle `this.media.byProduct(pid)` pour chacun.
+2. `frontend/src/app/services/media.service.ts:13-15` — `byProduct(productId)` fait le vrai appel : `GET http://localhost:8083/api/media/product/${productId}`.
+3. `backend/media-service/src/main/java/com/example/mediaservice/controller/MediaController.java:98-100` — `@GetMapping("/product/{productId}")` reçoit la requête et fait `repo.findByProductId(productId)`.
+
+### 2. Dénormalisation (duplication volontaire)
+
+Chaque ligne ci-dessous est l'endroit exact du code où la copie est faite :
+
+| Champ dupliqué | Copié depuis | Où dans le code |
+|---|---|---|
+| `CartItem.productName` / `price` / `sellerId` | `product-service`, au moment de l'ajout au panier | `backend/cart-service/src/main/java/com/example/cartservice/service/CartService.java:65-71` (bloc `CartItem.builder()` dans `addToCart()`) |
+| `OrderItem.productName` / `priceAtPurchase` / `sellerId` | le panier, au moment du checkout | `backend/order-service/src/main/java/com/example/orderservice/service/OrderService.java:284-292` (bloc `OrderItem.builder()` dans `checkout()`) |
+| `Product.sellerName` | le JWT, au moment de la création du produit | `backend/product-service/src/main/java/com/example/productservice/controller/ProductController.java:69` (`create()`) |
+
+**Pourquoi `priceAtPurchase` existe** : sans cette copie, l'historique de commande relirait le prix courant du produit à chaque affichage — si le vendeur change son prix après coup, tes vieilles factures changeraient de montant silencieusement. En figeant le prix à `OrderService.java:288` (`.priceAtPurchase(item.getPrice())`, copié depuis le panier), l'historique reste correct pour toujours, même si le produit change ou disparaît ensuite.
+
+**Pourquoi `sellerId` est dupliqué sur chaque `OrderItem`** : une commande peut mélanger des produits de plusieurs vendeurs (le panier n'est pas limité à un seul). Pour qu'un vendeur voie "mes commandes" sans qu'`order-service` rappelle `product-service` à chaque affichage, `sellerId` est filtré directement dans Mongo : `backend/order-service/src/main/java/com/example/orderservice/service/OrderService.java:168` (`searchOrders`, critère `items.sellerId`) et `:226-227` (`updateOrderStatus`, vérifie que le vendeur connecté possède bien un article de la commande).
+
+Le compromis classique de la dénormalisation : ces copies peuvent devenir "périmées". Exemple concret et vérifiable : si un vendeur se renomme, ses produits déjà créés gardent l'ancien `sellerName` — la preuve est dans `backend/product-service/src/main/java/com/example/productservice/controller/ProductController.java:84-86` (`update()`), où `sellerName` n'est réécrit que `if (existing.getSellerName() == null)`. C'est un choix assumé, cohérent avec le principe du prix figé ci-dessus.
 
 ## Pour aller plus loin
 

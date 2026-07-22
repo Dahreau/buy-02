@@ -16,12 +16,12 @@ Toujours en **HTTP synchrone**, jamais de file de messages (pas de Kafka/RabbitM
 
 | Qui appelle | Qui répond | Pourquoi | Fichier |
 |---|---|---|---|
-| cart-service | product-service | vérifier stock/prix/vendeur avant d'ajouter au panier | `CartService.fetchProductDetails` |
-| order-service | cart-service | récupérer puis vider le panier au checkout | `OrderService.fetchCart` / `clearCart` |
-| order-service | product-service | décrémenter le stock quand une commande passe à `PAID` | `OrderProducer.sendStockUpdate` → `ProductController.updateStock` |
-| media-service | product-service | rattacher une image uploadée au produit (`imageIds`) | `MediaController.upload` → `ProductController.addImage` |
+| cart-service | product-service | vérifier stock/prix/vendeur avant d'ajouter au panier | `CartService.fetchProductDetails()` — `backend/cart-service/src/main/java/com/example/cartservice/service/CartService.java:106` |
+| order-service | cart-service | récupérer puis vider le panier au checkout | `OrderService.checkout()` — `backend/order-service/src/main/java/com/example/orderservice/service/OrderService.java:276` |
+| order-service | product-service | décrémenter le stock quand une commande passe à `PAID` | `OrderService.updateOrderStatus()` (`OrderService.java:236-245`, `orderProducer.sendStockUpdate(...)`) → `ProductController.updateStock()` — `backend/product-service/src/main/java/com/example/productservice/controller/ProductController.java:100-101` |
+| media-service | product-service | rattacher une image uploadée au produit (`imageIds`) | `MediaController.upload()` — `backend/media-service/src/main/java/com/example/mediaservice/controller/MediaController.java:43-70` (appel ligne 86) → `ProductController.addImage()` — `ProductController.java:123-126` |
 
-**Si on te demande "et si product-service est down pendant ce moment-là ?"** : sois honnête — `cart-service.fetchProductDetails` fait échouer l'ajout au panier proprement (exception catchée, message clair). Le call `order-service → product-service` pour le stock est, lui, volontairement non-bloquant : si ça échoue, on logue un warning mais la commande passe quand même à `PAID` (`OrderService.updateOrderStatus`, `try/catch` autour de `sendStockUpdate`). C'est un choix assumé : le paiement ne doit pas être bloqué par un souci de synchronisation de stock.
+**Si on te demande "et si product-service est down pendant ce moment-là ?"** : sois honnête — `CartService.fetchProductDetails()` (`CartService.java:106`) fait échouer l'ajout au panier proprement (exception catchée, message clair). Le call `order-service → product-service` pour le stock est, lui, volontairement non-bloquant : si ça échoue, on logue un warning mais la commande passe quand même à `PAID` (`OrderService.java:236-245`, `try/catch` autour de `sendStockUpdate`). C'est un choix assumé : le paiement ne doit pas être bloqué par un souci de synchronisation de stock.
 
 ## 3. "Comment les services se trouvent-ils sur le réseau ?"
 
@@ -38,7 +38,7 @@ C'est LA question à anticiper. Réponse structurée en deux temps :
 
 Détail complet avec tous les champs : `docs/database.md`.
 
-**Question piège possible : "et si les deux données divergent (ex. le vendeur change son nom) ?"** Réponse honnête : `Product.sellerName` ne se resynchronise que si le champ était vide au moment d'une modification du produit (`ProductController.update`) — c'est une limite connue et assumée, pas un bug caché.
+**Question piège possible : "et si les deux données divergent (ex. le vendeur change son nom) ?"** Réponse honnête : `Product.sellerName` ne se resynchronise que si le champ était vide au moment d'une modification du produit — `backend/product-service/src/main/java/com/example/productservice/controller/ProductController.java:84` (`if (existing.getSellerName() == null)`, dans `update()`) — c'est une limite connue et assumée, pas un bug caché.
 
 ## 5. "Comment fonctionne l'authentification à travers 5 services différents ?"
 
@@ -51,7 +51,7 @@ Deuxième mécanisme à distinguer du JWT : le **jeton interne** (`X-Internal-To
 
 ## 6. "Un vendeur peut-il aussi acheter ?"
 
-Oui, volontairement : rien dans l'énoncé n'exclut un vendeur de l'achat. Un vendeur ne peut juste pas acheter **son propre** produit (`CartService.addToCart`, comparaison `userId == product.getUserId()`). C'est un choix de design qu'on a fait nous-mêmes en cours de route (pas explicitement demandé), à assumer si on te le demande.
+Oui, volontairement : rien dans l'énoncé n'exclut un vendeur de l'achat. Un vendeur ne peut juste pas acheter **son propre** produit — `backend/cart-service/src/main/java/com/example/cartservice/service/CartService.java:42-44` (`addToCart()`, `if (userId.equals(product.getUserId())) throw ...`). C'est un choix de design qu'on a fait nous-mêmes en cours de route (pas explicitement demandé), à assumer si on te le demande.
 
 ## 7. "Comment le frontend est structuré ?"
 
@@ -59,7 +59,7 @@ Un seul `NgModule`, pas de lazy loading (taille du projet ne le justifie pas). U
 
 ## 8. "Comment est gérée la sécurité côté frontend ?"
 
-`TokenInterceptor` ajoute automatiquement le JWT à chaque requête sortante et déconnecte proprement sur un 401. Trois guards de route : `authGuard` (connecté), `sellerGuard` (connecté + vendeur), `clientGuard` (connecté, les deux rôles — utilisé pour "Mes commandes", accessible aux vendeurs aussi).
+`TokenInterceptor` (`frontend/src/app/services/token.interceptor.ts:12-18`) ajoute automatiquement le JWT à chaque requête sortante et déconnecte proprement sur un 401 (`:21-25`). Trois guards de route dans `frontend/src/app/services/auth.guard.ts` : `authGuard` (`:6-12`, connecté), `sellerGuard` (`:15-25`, connecté + vendeur), `clientGuard` (`:28-36`, connecté, les deux rôles — utilisé pour "Mes commandes", accessible aux vendeurs aussi).
 
 ## 9. "Parlez-moi de vos tests"
 

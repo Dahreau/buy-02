@@ -54,10 +54,10 @@ Appels inter-services existants :
 
 | Appelant | Appelé | Pourquoi |
 |---|---|---|
-| `cart-service` | `product-service` (`GET /api/products/{id}`) | Vérifier que le produit existe, récupérer son prix/stock/vendeur avant de l'ajouter au panier |
-| `order-service` | `cart-service` (`GET /api/carts`, `DELETE /api/carts/clear`) | Récupérer le contenu du panier au moment du checkout, puis le vider une fois la commande créée |
-| `order-service` | `product-service` (`POST /api/products/stock-update`) | Décrémenter le stock quand une commande passe de `PENDING` à `PAID` |
-| `media-service` | `product-service` (`POST /api/products/{id}/images`) | Prévenir product-service qu'une image a été rattachée à un produit, pour mettre à jour `imageIds` |
+| `cart-service` | `product-service` (`GET /api/products/{id}`) | Vérifier que le produit existe, récupérer son prix/stock/vendeur avant de l'ajouter au panier — `backend/cart-service/src/main/java/com/example/cartservice/service/CartService.java:106` (`fetchProductDetails()`, appelée depuis `addToCart()` ligne 35) |
+| `order-service` | `cart-service` (`GET /api/carts`, `DELETE /api/carts/clear`) | Récupérer le contenu du panier au moment du checkout, puis le vider une fois la commande créée — `backend/order-service/src/main/java/com/example/orderservice/service/OrderService.java:276` (`checkout()`) |
+| `order-service` | `product-service` (`POST /api/products/stock-update`) | Décrémenter le stock quand une commande passe de `PENDING` à `PAID` — `OrderService.java:236-245` (`updateOrderStatus()`, `orderProducer.sendStockUpdate(...)` par article) |
+| `media-service` | `product-service` (`POST /api/products/{id}/images`) | Prévenir product-service qu'une image a été rattachée à un produit, pour mettre à jour `imageIds` — appel dans `backend/media-service/src/main/java/com/example/mediaservice/controller/MediaController.java:86`, reçu par `backend/product-service/src/main/java/com/example/productservice/controller/ProductController.java:123-126` (`addImage()`) |
 
 Ces trois derniers appels (stock-update, images) sont protégés par un **jeton interne** (`X-Internal-Token`), différent du JWT utilisateur — voir [security.md](./security.md#jeton-interne-service-à-service).
 
@@ -70,26 +70,26 @@ Il n'y a pas de service d'autorisation central consulté à chaque requête. `us
 ## 6. Parcours complets (pour comprendre "qui fait quoi")
 
 ### Inscription / connexion
-1. Le frontend appelle `POST /api/auth/register` (ou `/login`) sur `user-service`.
-2. `user-service` hash le mot de passe (BCrypt), crée/vérifie l'utilisateur dans `userdb`, puis génère un JWT contenant `sub` (id utilisateur), `role` (`CLIENT`/`SELLER`) et `name`.
-3. Le frontend stocke ce token dans `localStorage` et l'attache à chaque requête suivante via un intercepteur HTTP (`TokenInterceptor`).
+1. Le frontend appelle `POST /api/auth/register` (ou `/login`) sur `user-service` — `backend/user-service/src/main/java/com/example/userservice/controller/AuthController.java`.
+2. `user-service` hash le mot de passe (BCrypt, `AuthController.java:40`), crée/vérifie l'utilisateur dans `userdb`, puis génère un JWT (`AuthController.java:43`/`:59`) contenant `sub` (id utilisateur), `role` (`CLIENT`/`SELLER`) et `name`.
+3. Le frontend stocke ce token dans `localStorage` (`frontend/src/app/services/auth.service.ts:17-19`, `setToken()`) et l'attache à chaque requête suivante via un intercepteur HTTP (`TokenInterceptor`, `frontend/src/app/services/token.interceptor.ts:12-18`).
 
 ### Un vendeur crée un produit avec une image
-1. `POST /api/products` sur `product-service`, avec le JWT. Le service vérifie le rôle `SELLER`, valide prix/quantité, crée le document dans `productdb` en copiant `sellerName` depuis le JWT.
-2. Le frontend reçoit le produit créé (avec son `id`), puis envoie l'image en `multipart/form-data` vers `POST /api/media/upload` sur `media-service`.
-3. `media-service` stocke le fichier sur disque, crée un document dans `mediadb` référençant `productId`, puis notifie `product-service` (`POST /api/products/{id}/images`, avec le jeton interne) pour que le produit garde la liste de ses `imageIds`.
+1. `POST /api/products` sur `product-service`, avec le JWT — `backend/product-service/src/main/java/com/example/productservice/controller/ProductController.java:58-72` (`create()`). Le service vérifie le rôle `SELLER` (`:60`, `validateSeller()`), valide prix/quantité (`:61`), crée le document dans `productdb` en copiant `sellerName` depuis le JWT (`:69`).
+2. Le frontend reçoit le produit créé (avec son `id`), puis envoie l'image en `multipart/form-data` vers `POST /api/media/upload` sur `media-service` — `frontend/src/app/seller-dashboard.component.ts:95-101` (upload déclenché après `saveProduct()`).
+3. `media-service` stocke le fichier sur disque, crée un document dans `mediadb` référençant `productId` (`backend/media-service/src/main/java/com/example/mediaservice/controller/MediaController.java:43-70`, `upload()`), puis notifie `product-service` (`MediaController.java:86`, `POST /api/products/{id}/images` avec le jeton interne) pour que le produit garde la liste de ses `imageIds` (reçu côté `ProductController.java:123-126`, `addImage()`).
 
 ### Un client ajoute un produit au panier
-1. `POST /api/carts` sur `cart-service`.
-2. `cart-service` appelle `product-service` pour vérifier que le produit existe et a du stock, refuse si le vendeur essaie d'acheter son propre produit, puis enregistre/actualise le document `Cart` de l'utilisateur dans `cartdb`.
+1. `POST /api/carts` sur `cart-service` — `backend/cart-service/src/main/java/com/example/cartservice/controller/CartController.java`.
+2. `cart-service` appelle `product-service` pour vérifier que le produit existe et a du stock (`CartService.java:35`, `fetchProductDetails()`), refuse si le vendeur essaie d'acheter son propre produit (`CartService.java:42-44`), puis enregistre/actualise le document `Cart` de l'utilisateur dans `cartdb` (`CartService.java:74`, `cartRepository.save(cart)`).
 
 ### Checkout
-1. `POST /api/orders/checkout` sur `order-service`.
-2. `order-service` appelle `cart-service` pour récupérer le panier actuel, fige chaque ligne (nom, prix, vendeur) dans une nouvelle commande `orderdb` avec le statut `PENDING`, puis appelle `cart-service` pour vider le panier.
+1. `POST /api/orders/checkout` sur `order-service` — `backend/order-service/src/main/java/com/example/orderservice/service/OrderService.java:276` (`checkout()`).
+2. `order-service` appelle `cart-service` pour récupérer le panier actuel, fige chaque ligne (nom, prix, vendeur) dans une nouvelle commande `orderdb` avec le statut `PENDING` (`OrderService.java:284-292`, bloc `OrderItem.builder()`), puis appelle `cart-service` pour vider le panier.
 
 ### Le vendeur marque une commande "Payée"
-1. `PUT /api/orders/{id}/status?status=PAID` sur `order-service`.
-2. `order-service` vérifie que le vendeur possède bien au moins un article dans cette commande, met à jour le statut, puis appelle `product-service` (`/stock-update`) pour chaque article afin de décrémenter le stock réel.
+1. `PUT /api/orders/{id}/status?status=PAID` sur `order-service` — `backend/order-service/src/main/java/com/example/orderservice/controller/OrderController.java:104-110` (`updateOrderStatus()`).
+2. `order-service` vérifie que le vendeur possède bien au moins un article dans cette commande (`OrderService.java:229-234`, `isSellerOfOrder`), met à jour le statut, puis appelle `product-service` (`/stock-update`) pour chaque article afin de décrémenter le stock réel (`OrderService.java:236-245`, `orderProducer.sendStockUpdate(...)`).
 
 ## 7. Les deux nginx du projet
 

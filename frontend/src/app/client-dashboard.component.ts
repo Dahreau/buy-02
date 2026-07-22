@@ -32,9 +32,9 @@ export class ClientDashboardComponent implements OnInit {
     this.orderService.getUserStats().subscribe({
       next: (data) => {
         this.userStats = data;
-        console.log('📊 Stats client :', data);
+        console.log('📊 Client stats:', data);
       },
-      error: (err) => console.error('Erreur stats:', err)
+      error: (err) => console.error('Stats error:', err)
     });
   }
 
@@ -49,13 +49,13 @@ export class ClientDashboardComponent implements OnInit {
     }).subscribe({
       next: (page: Page<Order>) => {
         this.orders = page.content;
-        console.log('📦 Commandes reçues :', this.orders); // ← regarde la console
+        console.log('📦 Orders received:', this.orders);
         this.totalPages = page.totalPages;
         this.currentPage = page.number;
         this.loading = false;
       },
       error: () => {
-        this.error = 'Impossible de charger les commandes.';
+        this.error = 'Unable to load orders.';
         this.loading = false;
       }
     });
@@ -68,51 +68,51 @@ export class ClientDashboardComponent implements OnInit {
 
 
   cancelOrder(order: Order): void {
-    if (!confirm(`Annuler la commande #${order.id} ?`)) return;
+    if (!confirm(`Cancel order #${order.id}?`)) return;
     this.orderService.cancelOrder(order.id).subscribe({
       next: () => {
-        alert('Commande annulée.');
+        alert('Order cancelled.');
         this.loadOrders();
         this.loadStats();
       },
-      error: () => alert('Erreur lors de l\'annulation.')
+      error: () => alert('Error cancelling the order.')
     });
   }
 
   redoOrder(order: Order): void {
-    if (!confirm(`Recréer une commande à partir de #${order.id} ?`)) return;
+    if (!confirm(`Recreate an order based on #${order.id}?`)) return;
     this.orderService.redoOrder(order.id).subscribe({
       next: () => {
-        alert('Nouvelle commande créée !');
+        alert('New order created!');
         this.loadOrders();
         this.loadStats();
       },
-      error: () => alert('Erreur lors de la recommandation.')
+      error: () => alert('Error recreating the order.')
     });
   }
 
   deleteOrder(order: Order): void {
-    if (!confirm(`Supprimer définitivement la commande #${order.id} de votre historique ?`)) return;
+    if (!confirm(`Permanently delete order #${order.id} from your history?`)) return;
     this.orderService.deleteOrder(order.id).subscribe({
       next: () => {
-        alert('Commande supprimée.');
+        alert('Order deleted.');
         this.loadOrders();
         this.loadStats();
       },
-      error: () => alert('Erreur lors de la suppression.')
+      error: () => alert('Error deleting the order.')
     });
   }
 
   // ==================== AFFICHAGE DES STATUTS ====================
 getStatusLabel(status: string): string {
   const map: { [key: string]: string } = {
-    'PENDING': '🟡 En attente',
-    'PAID': '🟢 Payée',
-    'SHIPPED': '📦 Expédiée',
-    'DELIVERED': '✅ Livrée',
-    'CANCELLED': '❌ Annulée'
+    'PENDING': '🟡 Pending',
+    'PAID': '🟢 Paid',
+    'SHIPPED': '📦 Shipped',
+    'DELIVERED': '✅ Delivered',
+    'CANCELLED': '❌ Cancelled'
   };
-  return map[status] || '❓ Inconnu';
+  return map[status] || '❓ Unknown';
 }
 
 getStatusColor(status: string): string {
