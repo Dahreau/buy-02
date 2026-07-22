@@ -19,6 +19,8 @@ export class CartComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadCart();
+    // Reload whenever another component (e.g. the product list) adds/changes an item.
+    this.cartService.cartUpdated$.subscribe(() => this.loadCart());
   }
 
   loadCart(): void {

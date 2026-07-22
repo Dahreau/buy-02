@@ -1,7 +1,6 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { ProductService } from './services/product.service';
 import { MediaService } from './services/media.service';
-import { AppComponent } from './app.component';
 import { CartService } from './services/cart.service';
 import { AuthService } from './services/auth.service';
 
@@ -83,7 +82,6 @@ import { AuthService } from './services/auth.service';
   `
 })
 export class ProductListComponent implements OnInit {
-  @ViewChild(AppComponent) appComponent!: AppComponent;
   products: any[] = [];
   filteredProducts: any[] = [];
   quantities: { [productId: string]: number } = {};
@@ -147,6 +145,13 @@ export class ProductListComponent implements OnInit {
     const min = Number.parseFloat(minPrice) || 0;
     const max = Number.parseFloat(maxPrice) || 1000000;
 
+    // Typing a multi-digit max (e.g. "100") fires one request per keystroke,
+    // so min can transiently be greater than the not-yet-fully-typed max.
+    // Skip that request instead of sending a range the backend will reject.
+    if (min > max) {
+      return;
+    }
+
     this.productService.search(t, min, max, 0, 10).subscribe({
       next: response => {
         this.filteredProducts = response.content;
@@ -175,8 +180,8 @@ export class ProductListComponent implements OnInit {
       next: () => {
         alert(`✅ ${qty} × "${p.name}" added to cart!`);
         this.quantities[productId] = 1;
-        // Reload the cart via AppComponent
-        this.appComponent.loadCart();
+        // Tell the cart panel (a sibling, not a child of this routed component) to reload.
+        this.cartService.notifyCartUpdated();
       },
       error: (e) => {
         console.error(e);

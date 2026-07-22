@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
 
 export interface CartRequest {
   productId: string;
@@ -19,6 +19,16 @@ export interface Cart {
 })
 export class CartService {
   private readonly apiUrl = 'http://localhost:8085/api/carts';
+
+  // Lets any component (e.g. ProductListComponent, which isn't a template
+  // child of AppComponent and can't ViewChild it) tell the cart panel to
+  // reload without depending on the component tree.
+  private readonly cartUpdated = new Subject<void>();
+  readonly cartUpdated$ = this.cartUpdated.asObservable();
+
+  notifyCartUpdated(): void {
+    this.cartUpdated.next();
+  }
 
   constructor(private readonly http: HttpClient) {}
 
