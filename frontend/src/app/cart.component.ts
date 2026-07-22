@@ -19,6 +19,8 @@ export class CartComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadCart();
+    // Reload whenever another component (e.g. the product list) adds/changes an item.
+    this.cartService.cartUpdated$.subscribe(() => this.loadCart());
   }
 
   loadCart(): void {
@@ -58,7 +60,7 @@ export class CartComponent implements OnInit {
 
   validateCart(): void {
     if (!this.shippingAddress || this.shippingAddress.trim() === '') {
-      alert('Veuillez entrer une adresse de livraison.');
+      alert('Please enter a shipping address.');
       return;
     }
     const payload = { shippingAddress: this.shippingAddress, paymentMethod: 'PAY_ON_DELIVERY' };
@@ -67,12 +69,12 @@ export class CartComponent implements OnInit {
         this.isOpen = false;
         this.shippingAddress = '';
         this.loadCart();
-        alert('✅ Commande validée !');
-        this.router.navigate(['/profile/mes-commandes']); // ← redirection
+        alert('✅ Order placed!');
+        this.router.navigate(['/profile/mes-commandes']);
       },
       error: (err) => {
-        console.error('Erreur lors de la validation', err);
-        alert('❌ Erreur lors de la validation de la commande');
+        console.error('Checkout error', err);
+        alert('❌ Error placing the order');
       }
     });
   }

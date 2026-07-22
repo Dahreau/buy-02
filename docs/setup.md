@@ -7,10 +7,22 @@
 
 ## 2. Tout lancer avec Docker Compose (recommandé)
 
+**Étape préalable obligatoire (une fois par changement frontend) :** le `Dockerfile` du frontend attend un dossier `frontend/dist/buy-frontend` déjà construit — il ne le construit pas lui-même (voir pourquoi en encadré ci-dessous). Sans ce dossier, `docker compose up --build` échoue sur l'étape `frontend` avec `dist/buy-frontend: not found`.
+
 ```bash
-# à la racine du repo
+cd frontend
+npm install
+npm run build   # attends bien le message de fin (résumé des tailles de fichiers), ça peut prendre 1-3 min la première fois
+cd ..
+```
+
+Puis, à la racine :
+
+```bash
 JWT_SECRET=un-secret-suffisamment-long INTERNAL_TOKEN=un-autre-secret docker compose up --build
 ```
+
+> Pourquoi cette étape n'est pas automatisée dans le `Dockerfile` : en CI (Jenkins), l'étape "Build & Test Frontend" du `Jenkinsfile` fait déjà `npm run build` avant d'appeler `docker compose build`, donc `dist/` existe déjà à ce moment-là — le `Dockerfile` n'a jamais eu besoin de le refaire. Ça ne pose problème que si tu lances `docker compose up --build` toi-même, en direct, sans passer par Jenkins (ex. pour un test manuel rapide).
 
 `JWT_SECRET` et `INTERNAL_TOKEN` doivent être définis (le `Jenkinsfile` les injecte via des credentials Jenkins en CI ; en local tu peux les mettre dans un fichier `.env` à la racine — non versionné — ou les passer en ligne de commande comme ci-dessus). Si tu ne les définis pas, chaque service retombe sur une valeur par défaut codée en dur dans son `JwtUtil`/contrôleur — pratique pour un test rapide en solo, à éviter dès que plusieurs personnes travaillent sur le même environnement partagé.
 

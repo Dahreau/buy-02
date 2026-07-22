@@ -24,8 +24,7 @@ export const sellerGuard = () => {
   return false;
 };
 
-// "My orders" is open to any authenticated user. Sellers can buy too (cart is
-// available to them), so they need access to their own order history as well.
+// "My orders" is open to any authenticated user. Sellers can buy too (cart is available to them), so they need access to their own order history as well.
 export const clientGuard = () => {
   const auth = inject(AuthService);
   const router = inject(Router);

@@ -1,71 +1,71 @@
 <div class="dashboard-header">
   <div>
-    <h1 class="page-title">📋 Mes commandes</h1>
-    <p class="page-subtitle">Suivez toutes vos achats en un coup d'œil</p>
+    <h1 class="page-title">📋 My Orders</h1>
+    <p class="page-subtitle">Track all your purchases at a glance</p>
   </div>
 </div>
 
-<!-- Statistiques -->
+<!-- Statistics -->
 <div class="stats-grid" *ngIf="userStats">
   <div class="stat-card">
     <div class="stat-icon">💰</div>
     <div>
-      <div class="stat-label">Total dépensé</div>
+      <div class="stat-label">Total spent</div>
       <div class="stat-value">{{ userStats.totalSpent | currency:'EUR' }}</div>
     </div>
   </div>
   <div class="stat-card">
     <div class="stat-icon">📦</div>
     <div>
-      <div class="stat-label">Nombre de commandes</div>
+      <div class="stat-label">Number of orders</div>
       <div class="stat-value">{{ userStats.totalOrders }}</div>
     </div>
   </div>
   <div class="stat-card" *ngIf="userStats.topProducts?.length">
     <div class="stat-icon">⭐</div>
     <div>
-      <div class="stat-label">Produit favori</div>
+      <div class="stat-label">Favorite product</div>
       <div class="stat-value">{{ userStats.topProducts[0]?.productName || '-' }}</div>
     </div>
   </div>
 </div>
 
-<!-- Filtres -->
+<!-- Filters -->
 <div class="form-card" style="margin-bottom:20px;">
   <div style="display:flex; gap:15px; flex-wrap:wrap;">
-    <!-- Recherche -->
+    <!-- Search -->
     <div class="form-group" style="flex:2; min-width:200px;">
-      <label for="filterKeyword">🔍 Rechercher</label>
-      <input id="filterKeyword" class="form-control" placeholder="Mot-clé..." [(ngModel)]="filterKeyword" (input)="onFilterChange()" />
+      <label for="filterKeyword">🔍 Search</label>
+      <input id="filterKeyword" class="form-control" placeholder="Keyword..." [(ngModel)]="filterKeyword" (input)="onFilterChange()" />
     </div>
 
-    <!-- Statut -->
+    <!-- Status -->
     <div class="form-group" style="flex:1; min-width:150px;">
-      <label for="filterStatus">📊 Statut</label>
+      <label for="filterStatus">📊 Status</label>
       <select id="filterStatus" class="form-control" [(ngModel)]="filterStatus" (change)="onFilterChange()">
-        <option value="">Tous</option>
-        <option value="PENDING">En attente</option>
-        <option value="PAID">Payée</option>
-        <option value="SHIPPED">Expédiée</option>
-        <option value="DELIVERED">Livrée</option>
-        <option value="CANCELLED">Annulée</option>
+        <option value="">All</option>
+        <option value="PENDING">Pending</option>
+        <option value="PAID">Paid</option>
+        <option value="SHIPPED">Shipped</option>
+        <option value="DELIVERED">Delivered</option>
+        <option value="CANCELLED">Cancelled</option>
       </select>
     </div>
 
-    <!-- Bouton Rafraîchir -->
+    <!-- Refresh button -->
     <div class="form-group" style="flex:0 0 auto; display:flex; align-items:flex-end;">
-      <button class="btn-submit" type="button" (click)="loadOrders()">🔄 Rafraîchir</button>
+      <button class="btn-submit" type="button" (click)="loadOrders()">🔄 Refresh</button>
     </div>
   </div>
 </div>
 
-<!-- Chargement / Erreur / Vide -->
-<div *ngIf="loading" style="text-align:center; padding:40px;">⏳ Chargement...</div>
+<!-- Loading / Error / Empty -->
+<div *ngIf="loading" style="text-align:center; padding:40px;">⏳ Loading...</div>
 <div *ngIf="error" class="alert alert-danger"
   style="padding:15px; background:#f8d7da; color:#721c24; border-radius:8px;">{{ error }}</div>
 <div *ngIf="!loading && orders.length === 0" class="empty-state">
   <div class="empty-icon">📭</div>
-  <p>Aucune commande trouvée.</p>
+  <p>No orders found.</p>
 </div>
 
 <!-- Grille des commandes -->
@@ -92,27 +92,27 @@
         </div>
       </div>
       <p class="product-description" style="font-size:0.8rem; color:#6c757d;">
-        🏠 {{ order.shippingAddress || 'Non spécifiée' }}<br />
+        🏠 {{ order.shippingAddress || 'Not specified' }}<br />
         📅 {{ order.createdAt | date:'dd/MM/yyyy HH:mm' }}
       </p>
 
       <div class="product-actions" style="margin-top:12px; gap:8px; display:flex; flex-wrap:wrap;">
-        <!-- Annuler -->
+        <!-- Cancel -->
         <button *ngIf="order.status === 'PENDING'" class="btn-delete" type="button" (click)="cancelOrder(order)"
           style="padding:6px 14px; font-size:0.8rem;">
-          ❌ Annuler
+          ❌ Cancel
         </button>
 
-        <!-- Recommander -->
+        <!-- Reorder -->
         <button *ngIf="order.status === 'DELIVERED' || order.status === 'CANCELLED'" class="btn-edit" type="button"
           (click)="redoOrder(order)" style="padding:6px 14px; font-size:0.8rem;">
-          🔄 Recommander
+          🔄 Reorder
         </button>
 
         <!-- Delete: only for finished orders, matches the backend rule -->
         <button *ngIf="order.status === 'DELIVERED' || order.status === 'CANCELLED'" class="btn-delete" type="button"
           (click)="deleteOrder(order)" style="padding:6px 14px; font-size:0.8rem;">
-          🗑️ Supprimer
+          🗑️ Delete
         </button>
       </div>
     </div>

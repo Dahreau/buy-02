@@ -69,11 +69,11 @@ export class SellerDashboardComponent implements OnInit {
     evt.preventDefault();
 
     if (!this.price || this.price <= 0) {
-      alert('Le prix doit être supérieur à 0.');
+      alert('Price must be greater than 0.');
       return;
     }
     if (this.quantity == null || this.quantity < 0) {
-      alert('La quantité ne peut pas être négative.');
+      alert('Quantity cannot be negative.');
       return;
     }
 
@@ -101,24 +101,24 @@ export class SellerDashboardComponent implements OnInit {
           });
           Promise.all(uploads)
             .then(() => {
-              alert(this.editingProductId ? 'Produit mis à jour avec images' : 'Produit créé avec images');
+              alert(this.editingProductId ? 'Product updated with images' : 'Product created with images');
               this.cancelEdit();
               this.loadMyProducts();
             })
             .catch(() => {
-              alert('Produit sauvegardé mais erreur lors de l\'upload des images');
+              alert('Product saved but image upload failed');
               this.cancelEdit();
               this.loadMyProducts();
             });
         } else {
-          alert(this.editingProductId ? 'Mis à jour' : 'Créé');
+          alert(this.editingProductId ? 'Updated' : 'Created');
           this.cancelEdit();
           this.loadMyProducts();
         }
       },
       error: (err) => {
         const msg = err?.error?.error;
-        alert(msg || (this.editingProductId ? 'Échec mise à jour' : 'Échec création'));
+        alert(msg || (this.editingProductId ? 'Update failed' : 'Creation failed'));
       }
     });
   }
@@ -147,14 +147,14 @@ export class SellerDashboardComponent implements OnInit {
   }
 
   confirmDelete(p: any) {
-    if (!confirm('Supprimer "' + p.name + '" ?')) return;
+    if (!confirm('Delete "' + p.name + '"?')) return;
     const id = p.id || p._id;
     this.productService.delete(id).subscribe({
       next: () => {
-        alert('Supprimé');
+        alert('Deleted');
         this.loadMyProducts();
       },
-      error: () => alert('Échec suppression')
+      error: () => alert('Delete failed')
     });
   }
 
@@ -197,7 +197,7 @@ export class SellerDashboardComponent implements OnInit {
       next: (data: any) => {
         this.orders = data.content || [];
       },
-      error: (err) => console.error('Erreur chargement commandes:', err)
+      error: (err) => console.error('Error loading orders:', err)
     });
   }
 
@@ -206,7 +206,7 @@ export class SellerDashboardComponent implements OnInit {
       next: (data) => {
         this.stats = data;
       },
-      error: (err) => console.error('Erreur chargement stats:', err)
+      error: (err) => console.error('Error loading stats:', err)
     });
   }
   // ==================== STATUTS ====================
@@ -214,11 +214,11 @@ export class SellerDashboardComponent implements OnInit {
 // Info pour l'affichage
 getStatusInfo(status: string) {
     const map: any = {
-      'PENDING':   { label: 'En attente', icon: '🟡', color: '#f59e0b', next: 'PAID' },
-      'PAID':      { label: 'Payée', icon: '🟢', color: '#10b981', next: 'SHIPPED' },
-      'SHIPPED':   { label: 'Expédiée', icon: '📦', color: '#3b82f6', next: 'DELIVERED' },
-      'DELIVERED': { label: 'Livrée', icon: '✅', color: '#8b5cf6', next: null },
-      'CANCELLED': { label: 'Annulée', icon: '❌', color: '#ef4444', next: null }
+      'PENDING':   { label: 'Pending', icon: '🟡', color: '#f59e0b', next: 'PAID' },
+      'PAID':      { label: 'Paid', icon: '🟢', color: '#10b981', next: 'SHIPPED' },
+      'SHIPPED':   { label: 'Shipped', icon: '📦', color: '#3b82f6', next: 'DELIVERED' },
+      'DELIVERED': { label: 'Delivered', icon: '✅', color: '#8b5cf6', next: null },
+      'CANCELLED': { label: 'Cancelled', icon: '❌', color: '#ef4444', next: null }
     };
     return map[status] || { label: status, icon: '❓', color: '#6b7280', next: null };
   }
@@ -241,7 +241,7 @@ getStatusInfo(status: string) {
     if (info.next) {
       this.updateOrderStatus(order.id, info.next);
     } else {
-      alert('Cette commande est déjà dans son état final.');
+      alert('This order is already in its final state.');
     }
   }
 
@@ -253,8 +253,8 @@ getStatusInfo(status: string) {
         this.loadSellerStats();
       },
       error: (err) => {
-        console.error('Erreur mise à jour statut:', err);
-        alert('Erreur lors du changement de statut');
+        console.error('Status update error:', err);
+        alert('Error changing status');
       }
     });
   }

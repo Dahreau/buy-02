@@ -1,7 +1,6 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { ProductService } from './services/product.service';
 import { MediaService } from './services/media.service';
-import { AppComponent } from './app.component';
 import { CartService } from './services/cart.service';
 import { AuthService } from './services/auth.service';
 
@@ -10,30 +9,30 @@ import { AuthService } from './services/auth.service';
   styleUrls: ['../styles/ui.css'],
   template: `
       
-    <!-- ===== EN-TÊTE PRODUITS ===== -->
+    <!-- ===== PRODUCTS HEADER ===== -->
     <div class="products-header">
       <div>
-        <h4>🛍️ Produits</h4>
-        <p class="page-subtitle">Découvrez les produits disponibles</p>
+        <h4>🛍️ Products</h4>
+        <p class="page-subtitle">Discover available products</p>
       </div>
       <div class="vendor-badge">
-        <span class="dot"></span> Catalogue
+        <span class="dot"></span> Catalog
       </div>
     </div>
 
-    <!-- ===== FORMULAIRE DE RECHERCHE ===== -->
+    <!-- ===== SEARCH FORM ===== -->
     <div class="form-card mb-4">
-      <div class="form-row" style="grid-template-columns: 2fr 1fr 1fr; margin-bottom: 0;">
+      <div class="form-row search-row" style="margin-bottom: 0;">
         <div class="form-group full-width">
-          <label>Recherche</label>
+          <label>Search</label>
           <input #searchInput class="form-control" type="search" placeholder="Search products..." (input)="onSearch(searchInput.value, minInput.value, maxInput.value)" />
         </div>
         <div class="form-group">
-          <label>Prix min</label>
+          <label>Min price</label>
           <input #minInput class="form-control" type="number" placeholder="Min Price" (input)="onSearch(searchInput.value, minInput.value, maxInput.value)" />
         </div>
         <div class="form-group">
-          <label>Prix max</label>
+          <label>Max price</label>
           <input #maxInput class="form-control" type="number" placeholder="Max Price" (input)="onSearch(searchInput.value, minInput.value, maxInput.value)" />
         </div>
       </div>
@@ -46,7 +45,7 @@ import { AuthService } from './services/auth.service';
           <img *ngIf="p.images && p.images.length" [src]="p.images[0].imagePath" alt="{{p.name}}" />
           <div *ngIf="!p.images || !p.images.length" class="no-image">🖼️</div>
           <span class="stock-badge" [class.in-stock]="p.quantity > 5" [class.low-stock]="p.quantity <= 5 && p.quantity > 0" [class.out-of-stock]="p.quantity === 0">
-            {{ p.quantity === 0 ? 'Rupture' : (p.quantity <= 10 ? 'Stock faible' : 'En stock') }}
+            {{ p.quantity === 0 ? 'Out of stock' : (p.quantity <= 10 ? 'Low stock' : 'In stock') }}
           </span>
         </div>
 
@@ -55,16 +54,16 @@ import { AuthService } from './services/auth.service';
             <h5 class="product-name">{{ p.name }}</h5>
             <span class="product-price">{{ p.price | currency:'EUR' }}</span>
           </div>
-          <p class="product-description">{{ p.description || 'Aucune description' }}</p>
+          <p class="product-description">{{ p.description || 'No description' }}</p>
           <p class="product-description" style="margin:0 0 6px 0; font-size:0.8rem; color:#6c757d;">
-            🏪 {{ p.sellerName || 'Vendeur' }}
+            🏪 {{ p.sellerName || 'Seller' }}
           </p>
           <div class="product-meta">
             <span class="product-id">🆔 {{ (p.id || p._id) | slice:0:8 }}...</span>
-            <span class="product-qty">📦 {{ p.quantity }} unités</span>
+            <span class="product-qty">📦 {{ p.quantity }} units</span>
           </div>
 
-          <!-- ===== COMPTEUR + BOUTON AJOUTER ===== -->
+          <!-- ===== QUANTITY COUNTER + ADD BUTTON ===== -->
           <div class="product-cart-actions">
             <div class="qty-selector">
               <button class="qty-btn" type="button" (click)="decreaseQty(p)" [disabled]="getQty(p) <= 1 || p.quantity === 0">−</button>
@@ -73,8 +72,8 @@ import { AuthService } from './services/auth.service';
             </div>
             <button class="btn-add-to-cart" type="button" (click)="addToCart(p)"
               [disabled]="p.quantity === 0 || isOwnProduct(p)"
-              [title]="isOwnProduct(p) ? 'Vous ne pouvez pas acheter votre propre produit' : ''">
-              {{ isOwnProduct(p) ? '🚫 Votre produit' : '🛒 Ajouter' }}
+              [title]="isOwnProduct(p) ? 'You cannot buy your own product' : ''">
+              {{ isOwnProduct(p) ? '🚫 Your product' : '🛒 Add' }}
             </button>
           </div>
         </div>
@@ -83,7 +82,6 @@ import { AuthService } from './services/auth.service';
   `
 })
 export class ProductListComponent implements OnInit {
-  @ViewChild(AppComponent) appComponent!: AppComponent;
   products: any[] = [];
   filteredProducts: any[] = [];
   quantities: { [productId: string]: number } = {};
@@ -147,6 +145,13 @@ export class ProductListComponent implements OnInit {
     const min = Number.parseFloat(minPrice) || 0;
     const max = Number.parseFloat(maxPrice) || 1000000;
 
+    // Typing a multi-digit max (e.g. "100") fires one request per keystroke,
+    // so min can transiently be greater than the not-yet-fully-typed max.
+    // Skip that request instead of sending a range the backend will reject.
+    if (min > max) {
+      return;
+    }
+
     this.productService.search(t, min, max, 0, 10).subscribe({
       next: response => {
         this.filteredProducts = response.content;
@@ -173,20 +178,20 @@ export class ProductListComponent implements OnInit {
     const qty = this.getQty(p);
     this.cartService.addToCart({ productId, quantity: qty }).subscribe({
       next: () => {
-        alert(`✅ ${qty} × "${p.name}" ajouté au panier !`);
+        alert(`✅ ${qty} × "${p.name}" added to cart!`);
         this.quantities[productId] = 1;
-        // 🔥 Recharge le panier via AppComponent
-        this.appComponent.loadCart();
+        // Tell the cart panel (a sibling, not a child of this routed component) to reload.
+        this.cartService.notifyCartUpdated();
       },
       error: (e) => {
         console.error(e);
-        alert('❌ ' + (e?.error?.error || 'Échec de l\'ajout au panier'));
+        alert('❌ ' + (e?.error?.error || 'Failed to add to cart'));
       }
     });
   }
 
   checkout() {
-    // Implémentation simplifiée
-    alert('Fonctionnalité checkout à venir');
+    // Simplified implementation
+    alert('Checkout feature coming soon');
   }
 }

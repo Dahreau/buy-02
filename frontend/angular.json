@@ -16,7 +16,8 @@
             "polyfills": "src/polyfills.ts",
             "tsConfig": "tsconfig.app.json",
             "assets": ["src/favicon.ico", "src/assets"],
-            "styles": ["src/styles.css", "src/styles/ui.css"]
+            "styles": ["src/styles.css", "src/styles/ui.css"],
+            "outputHashing": "all"
           }
         },
         "serve": {

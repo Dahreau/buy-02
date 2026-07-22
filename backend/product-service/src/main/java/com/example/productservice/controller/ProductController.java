@@ -120,9 +120,6 @@ public class ProductController {
         return ResponseEntity.ok(product);
     }
 
-    // Internal endpoint to append an image/media id to a product's imageIds list.
-    // This endpoint expects an internal token in the X-Internal-Token header and is
-    // intended for trusted services (e.g., media-service) to keep data in sync.
     @PostMapping("/{id}/images")
     public ResponseEntity<Object> addImage(@PathVariable String id, @RequestBody Map<String, String> body,
             @RequestHeader(value = "X-Internal-Token", required = false) String token) {

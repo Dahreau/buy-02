@@ -61,11 +61,14 @@ public class OrderService {
     private static final String ITEMS_PRODUCT_ID_FIELD = "items.productId";
     private static final String PRODUCT_ID_FIELD = "productId";
     private static final String ITEMS_SELLER_ID_FIELD = "items.sellerId";
+    // "Dépensé" ne doit compter que les commandes réellement payées, pas les PENDING (pas encore payées) ni les CANCELLED.
+    private static final List<String> PAID_STATUSES = List.of(
+            OrderStatus.PAID.name(), OrderStatus.SHIPPED.name(), OrderStatus.DELIVERED.name());
 
     public UserStatsDTO getUserStats(String userId) {
         try {
             Aggregation baseAgg = Aggregation.newAggregation(
-                    Aggregation.match(Criteria.where(USER_ID_FIELD).is(userId).and(STATUS_FIELD).ne(OrderStatus.CANCELLED.name())),
+                    Aggregation.match(Criteria.where(USER_ID_FIELD).is(userId).and(STATUS_FIELD).in(PAID_STATUSES)),
                     Aggregation.project()
                             .and(ConvertOperators.ToDouble.toDouble("$totalAmount")).as("numericAmount"),
                     Aggregation.group()
@@ -76,7 +79,7 @@ public class OrderService {
             Map<String, Object> baseResults = mongoTemplate.aggregate(baseAgg, Order.class, org.bson.Document.class).getUniqueMappedResult();
 
             Aggregation productsAgg = Aggregation.newAggregation(
-                    Aggregation.match(Criteria.where(USER_ID_FIELD).is(userId).and(STATUS_FIELD).ne(OrderStatus.CANCELLED.name())),
+                    Aggregation.match(Criteria.where(USER_ID_FIELD).is(userId).and(STATUS_FIELD).in(PAID_STATUSES)),
                     Aggregation.unwind(ITEMS_FIELD),
                     Aggregation.group(ITEMS_PRODUCT_ID_FIELD)
                             .first(ITEMS_PRODUCT_NAME_FIELD).as(PRODUCT_NAME_FIELD)
