@@ -12,8 +12,19 @@ export class AppComponent {
   @ViewChild('cart') cartComponent!: CartComponent;
   isLoggedIn$: Observable<boolean>;
 
+  // Mobile nav collapse state — handled manually since only Bootstrap's CSS is loaded (no bootstrap.bundle.js), so data-bs-toggle has no effect.
+  navOpen = false;
+
   constructor(private readonly auth: AuthService) {
     this.isLoggedIn$ = this.auth.isLoggedIn$;
+  }
+
+  toggleNav(): void {
+    this.navOpen = !this.navOpen;
+  }
+
+  closeNav(): void {
+    this.navOpen = false;
   }
 
   toggleCart(): void {

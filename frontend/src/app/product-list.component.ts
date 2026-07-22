@@ -23,7 +23,7 @@ import { AuthService } from './services/auth.service';
 
     <!-- ===== FORMULAIRE DE RECHERCHE ===== -->
     <div class="form-card mb-4">
-      <div class="form-row" style="grid-template-columns: 2fr 1fr 1fr; margin-bottom: 0;">
+      <div class="form-row search-row" style="margin-bottom: 0;">
         <div class="form-group full-width">
           <label>Recherche</label>
           <input #searchInput class="form-control" type="search" placeholder="Search products..." (input)="onSearch(searchInput.value, minInput.value, maxInput.value)" />

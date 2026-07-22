@@ -96,42 +96,80 @@ pipeline {
             }
         }
 
-        stage('SonarQube Analysis') {
+        stage('SonarQube Scan') {
             when { expression { params.ROLLBACK == false } }
+
+            parallel {
+                stage('User Service Scan') {
+                    steps {
+                        dir('backend/user-service') {
+                            withSonarQubeEnv('sonarqube') {
+                                sh 'mvn org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar -Dsonar.projectKey=buy-02-user -Dsonar.projectName="buy-02-user" -Djava.net.preferIPv4Stack=true -Dsonar.exclusions=**/target/**,**/node_modules/**,**/*.spec.ts,**/generated-sources/** -Dsonar.java.binaries=target/classes'
+                            }
+                        }
+                    }
+                }
+                stage('Product Service Scan') {
+                    steps {
+                        dir('backend/product-service') {
+                            withSonarQubeEnv('sonarqube') {
+                                sh 'mvn org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar -Dsonar.projectKey=buy-02-product -Dsonar.projectName="buy-02-product" -Djava.net.preferIPv4Stack=true -Dsonar.exclusions=**/target/**,**/node_modules/**,**/*.spec.ts,**/generated-sources/** -Dsonar.java.binaries=target/classes'
+                            }
+                        }
+                    }
+                }
+                stage('Media Service Scan') {
+                    steps {
+                        dir('backend/media-service') {
+                            withSonarQubeEnv('sonarqube') {
+                                sh 'mvn org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar -Dsonar.projectKey=buy-02-media -Dsonar.projectName="buy-02-media" -Djava.net.preferIPv4Stack=true -Dsonar.exclusions=**/target/**,**/node_modules/**,**/*.spec.ts,**/generated-sources/** -Dsonar.java.binaries=target/classes'
+                            }
+                        }
+                    }
+                }
+                stage('Order Service Scan') {
+                    steps {
+                        dir('backend/order-service') {
+                            withSonarQubeEnv('sonarqube') {
+                                sh 'mvn org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar -Dsonar.projectKey=buy-02-order -Dsonar.projectName="buy-02-order" -Djava.net.preferIPv4Stack=true -Dsonar.exclusions=**/target/**,**/node_modules/**,**/*.spec.ts,**/generated-sources/** -Dsonar.java.binaries=target/classes'
+                            }
+                        }
+                    }
+                }
+                stage('Cart Service Scan') {
+                    steps {
+                        dir('backend/cart-service') {
+                            withSonarQubeEnv('sonarqube') {
+                                sh 'mvn org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar -Dsonar.projectKey=buy-02-cart -Dsonar.projectName="buy-02-cart" -Djava.net.preferIPv4Stack=true -Dsonar.exclusions=**/target/**,**/node_modules/**,**/*.spec.ts,**/generated-sources/** -Dsonar.java.binaries=target/classes'
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('SonarQube Quality Gates') {
+            when { expression { params.ROLLBACK == false } }
+
             steps {
                 dir('backend/user-service') {
                     script { env.CURRENT_SERVICE = 'User Service' }
-                    withSonarQubeEnv('sonarqube') {
-                        sh 'mvn org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar -Dsonar.projectKey=buy-02-user -Dsonar.projectName="buy-02-user" -Djava.net.preferIPv4Stack=true -Dsonar.exclusions=**/target/**,**/node_modules/**,**/*.spec.ts,**/generated-sources/** -Dsonar.java.binaries=target/classes'
-                    }
                     waitForQualityGate(abortPipeline: true)
                 }
                 dir('backend/product-service') {
                     script { env.CURRENT_SERVICE = 'Product Service' }
-                    withSonarQubeEnv('sonarqube') {
-                        sh 'mvn org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar -Dsonar.projectKey=buy-02-product -Dsonar.projectName="buy-02-product" -Djava.net.preferIPv4Stack=true -Dsonar.exclusions=**/target/**,**/node_modules/**,**/*.spec.ts,**/generated-sources/** -Dsonar.java.binaries=target/classes'
-                    }
                     waitForQualityGate(abortPipeline: true)
                 }
                 dir('backend/media-service') {
                     script { env.CURRENT_SERVICE = 'Media Service' }
-                    withSonarQubeEnv('sonarqube') {
-                        sh 'mvn org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar -Dsonar.projectKey=buy-02-media -Dsonar.projectName="buy-02-media" -Djava.net.preferIPv4Stack=true -Dsonar.exclusions=**/target/**,**/node_modules/**,**/*.spec.ts,**/generated-sources/** -Dsonar.java.binaries=target/classes'
-                    }
                     waitForQualityGate(abortPipeline: true)
                 }
                 dir('backend/order-service') {
                     script { env.CURRENT_SERVICE = 'Order Service' }
-                    withSonarQubeEnv('sonarqube') {
-                        sh 'mvn org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar -Dsonar.projectKey=buy-02-order -Dsonar.projectName="buy-02-order" -Djava.net.preferIPv4Stack=true -Dsonar.exclusions=**/target/**,**/node_modules/**,**/*.spec.ts,**/generated-sources/** -Dsonar.java.binaries=target/classes'
-                    }
                     waitForQualityGate(abortPipeline: true)
                 }
                 dir('backend/cart-service') {
                     script { env.CURRENT_SERVICE = 'Cart Service' }
-                    withSonarQubeEnv('sonarqube') {
-                        sh 'mvn org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar -Dsonar.projectKey=buy-02-cart -Dsonar.projectName="buy-02-cart" -Djava.net.preferIPv4Stack=true -Dsonar.exclusions=**/target/**,**/node_modules/**,**/*.spec.ts,**/generated-sources/** -Dsonar.java.binaries=target/classes'
-                    }
                     waitForQualityGate(abortPipeline: true)
                 }
             }
